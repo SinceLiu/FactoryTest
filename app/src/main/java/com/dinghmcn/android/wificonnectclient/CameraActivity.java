@@ -60,6 +60,7 @@ public class CameraActivity extends AppCompatActivity implements
     };
 
 
+    boolean mIsCameraStart = false;
     /**
      * On create.
      *
@@ -89,6 +90,7 @@ public class CameraActivity extends AppCompatActivity implements
         assert mCallback != null;
         mCameraView.addCallback(mCallback);
         mCameraView.start();
+		mIsCameraStart = true;
         // 获取拍照信息
         String cameraInfo = getIntent().getStringExtra("CameraInfo");
         if (null != cameraInfo && !cameraInfo.isEmpty()) {
@@ -101,7 +103,7 @@ public class CameraActivity extends AppCompatActivity implements
             mCameraView.setFacing(cameraId);
         }
         // 执行拍照
-        getBackgroundHandler().postDelayed(() -> mCameraView.takePicture(), 1000);
+        getBackgroundHandler().postDelayed(() -> {if(mIsCameraStart) mCameraView.takePicture();}, 1000);
     }
 
     /**

@@ -140,6 +140,8 @@ public class MainActivity extends Activity {
      * 准备工作，初始化测试项、打开Wifi并连接服务
      */
     private void testNext() {
+		initPermission();
+
         mConnectMessage = new StringBuilder();
         mMainHandler = new MainHandel(this);
         mWifiManagerUtils = WifiManagerUtils.getInstance(this);
@@ -168,7 +170,6 @@ public class MainActivity extends Activity {
                     ",\"PWD\":\"28896800\",\"Station\":1}");
 
         }
-        initPermission();
 
     }
 
@@ -186,6 +187,11 @@ public class MainActivity extends Activity {
             Log.d(TAG, "request permissions : " + Arrays.toString(permissions));
             //申请权限
             ActivityCompat.requestPermissions(this, permissions, 100);
+            try {
+				Thread.sleep(300);
+			}catch (Exception e){
+            	e.printStackTrace();
+			}
         }
     }
 
