@@ -112,6 +112,8 @@ public class MainActivity extends Activity {
     private DataModel dataModel;
     private USBDiskReceiver usbDiskReceiver;
 
+    String dir = "cache";
+
     /**
      * On create.
      *
@@ -134,6 +136,7 @@ public class MainActivity extends Activity {
         filter.addAction("android.intent.action.MEDIA_REMOVED");
         registerReceiver(usbDiskReceiver, filter);
         testNext();
+		dir = System.currentTimeMillis() + "";
     }
 
     /**
@@ -150,7 +153,9 @@ public class MainActivity extends Activity {
         bluetoothUtils = BluetoothUtils.getInstance(this);
         bluetoothUtils.bluetoothOpen();
         headsetLoopbackUtils = HeadsetLoopbackUtils.getInstance(this);
-        outPutMessage("headsetLoopbackUtils.start()");
+//        outPutMessage("headsetLoopbackUtils.start()");
+		outPutMessage(getVersionName(this));
+        versionUtils = VersionUtils.getInstance(this);
         versionUtils = VersionUtils.getInstance(this);
         storageUtils = StorageUtils.getInstance(this);
         assert mWifiManagerUtils != null;
@@ -478,6 +483,7 @@ public class MainActivity extends Activity {
             mActivityWeakReference = new WeakReference<>(activity);
         }
 
+        private String mLastPartInfo = "";
         /**
          * Handle message.
          *
@@ -493,12 +499,21 @@ public class MainActivity extends Activity {
             if (msg.what == CMD_CODE) {
                 Gson gson = new Gson();
                 String data = (String)msg.obj;
+                String tmpData = data.trim();
+                if(!tmpData.startsWith("{") && !TextUtils.isEmpty(mLastPartInfo)){
+                	data = mLastPartInfo + data;
+                	mLastPartInfo = "";
+				}
                 if(!TextUtils.isEmpty(data)) {
 					int index = data.indexOf("}");
 					if(index >= 0) data = data.substring(0, index + 1);
+					if(index < data.length() - 1){
+						mLastPartInfo = data.substring(index + 1);
+					}
 				}
                 try {
 //					dataModel = gson.fromJson((String) msg.obj, DataModel.class);
+					saveDatabjectToPath(getExternalCacheDir() + "/" + dir + "/" + System.currentTimeMillis() + ".txt", data);
 					dataModel = gson.fromJson(data, DataModel.class);
 				}catch (Exception e){
                 	e.printStackTrace();
@@ -804,5 +819,20 @@ public class MainActivity extends Activity {
 		}
 
 		return true;
+	}
+
+	public static String getVersionName(Context context)
+	{
+		String versionName = "";
+		try {
+			String pkName = context.getPackageName();
+			versionName = "版本：" + context.getPackageManager().getPackageInfo(
+					pkName, 0).versionName;
+// 			int versionCode = this.getPackageManager()
+// 					.getPackageInfo(pkName, 0).versionCode;
+// 			return pkName + "   " + versionName + "  " + versionCode;
+		} catch (Exception e) {
+		}
+		return versionName;
 	}
 }

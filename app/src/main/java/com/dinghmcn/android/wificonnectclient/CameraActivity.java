@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -31,6 +32,9 @@ public class CameraActivity extends AppCompatActivity implements
     private static final String TAG = "CameraActivity";
 
     private String mPictureName = "picture.jpg";
+
+    final int MSG_TAKEPICTURE = 0x1000;
+    Handler mHandler;
 
     @Nullable
     private CameraView mCameraView;
@@ -59,8 +63,6 @@ public class CameraActivity extends AppCompatActivity implements
 
     };
 
-
-    boolean mIsCameraStart = false;
     /**
      * On create.
      *
@@ -80,6 +82,18 @@ public class CameraActivity extends AppCompatActivity implements
 
         mCameraView = findViewById(R.id.camera);
 
+		mHandler = new Handler(new Handler.Callback() {
+			@Override
+			public boolean handleMessage(Message message) {
+				switch (message.what){
+					case MSG_TAKEPICTURE:
+						mCameraView.takePicture();
+						break;
+				}
+				return true;
+			}
+		});
+
         if (null != mCameraView) {
             init();
         }
@@ -90,7 +104,6 @@ public class CameraActivity extends AppCompatActivity implements
         assert mCallback != null;
         mCameraView.addCallback(mCallback);
         mCameraView.start();
-		mIsCameraStart = true;
         // 获取拍照信息
         String cameraInfo = getIntent().getStringExtra("CameraInfo");
         if (null != cameraInfo && !cameraInfo.isEmpty()) {
@@ -103,7 +116,10 @@ public class CameraActivity extends AppCompatActivity implements
             mCameraView.setFacing(cameraId);
         }
         // 执行拍照
-        getBackgroundHandler().postDelayed(() -> {if(mIsCameraStart) mCameraView.takePicture();}, 1000);
+//        getBackgroundHandler().postDelayed(() -> mCameraView.takePicture(), 1000);
+		Message message = new Message();
+        message.what = MSG_TAKEPICTURE;
+        mHandler.sendMessageDelayed(message, 1000);
     }
 
     /**

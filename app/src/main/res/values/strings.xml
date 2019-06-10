@@ -14,4 +14,13 @@
     <string name="show_file">Show %1$s.</string>
     <string name="software_expired">Software is Expired.</string>
     <string name="connect_info_error">Connect info errror!</string>
+
+    <string name="txt_title">请调节三个键盘灯亮度一致后，点击保存！</string>
+    <string name="save_led">保存</string>
+    <string name="str_r">中</string>
+    <string name="str_b">左</string>
+    <string name="str_g">右</string>
+    <string name="str_u">加一级</string>
+    <string name="str_d">减一级</string>
+    <string name="str_l">当前级别</string>
 </resources>
