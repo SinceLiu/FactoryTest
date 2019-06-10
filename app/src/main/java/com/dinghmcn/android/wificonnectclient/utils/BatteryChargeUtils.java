@@ -1,5 +1,6 @@
 package com.dinghmcn.android.wificonnectclient.utils;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,7 +8,6 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.dinghmcn.android.wificonnectclient.R;
 
@@ -19,52 +19,69 @@ import java.io.IOException;
 import static android.content.Context.BATTERY_SERVICE;
 
 /**
- * Created by zl121325 on 2019/4/10.
+ * 获取电池相关信息
+ * @author zl121325
+ * @date 2019/4/10
  */
-
 public class BatteryChargeUtils {
     private Context mContext;
     private String batteryStatus;
     private String quality;
     private boolean isChargingPass = false;
-    private boolean isStatePass = false;
+    @SuppressLint("StaticFieldLeak")
     private static BatteryChargeUtils instance = null;
     private int plugType;
     private int status;
     private int mLevel;
     private int voltage;
     private int temperature;
-    BatteryManager batteryManager;
+    private BatteryManager batteryManager;
+
     private BatteryChargeUtils(Context mContext) {
-        this.mContext=mContext;
-         batteryManager = (BatteryManager)mContext.getSystemService(BATTERY_SERVICE);
+        this.mContext = mContext;
+        batteryManager = (BatteryManager) mContext.getSystemService(BATTERY_SERVICE);
+        // 注册电池事件监听器
         mContext.registerReceiver(mChargeInfoReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
     }
+
+    /**
+     * Gets instance.
+     *
+     * @param context the context
+     * @return the instance
+     */
     public static BatteryChargeUtils getInstance(@NonNull Context context) {
         if (instance == null) {
             instance = new BatteryChargeUtils(context);
         }
         return instance;
     }
-    public void unregisterReceiver(){
+
+    /**
+     * 移除监听器
+     */
+    public void unregisterReceiver() {
         mContext.unregisterReceiver(mChargeInfoReceiver);
     }
+
     private BroadcastReceiver mChargeInfoReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-                 plugType = intent.getIntExtra("plugged", 0);///获取电源信息
-                 status = intent.getIntExtra("status", BatteryManager.BATTERY_STATUS_UNKNOWN);///获取电池状态
-                 mLevel = intent.getIntExtra("level", 0);///电池剩余电量
-                intent.getIntExtra("scale", 0);  ///获取电池满电量数值
-                voltage =intent.getIntExtra("voltage", 0);  ///获取电池电压
-                temperature=intent.getIntExtra("temperature", 0);  ///获取电池温度
+                //获取电源信息
+                plugType = intent.getIntExtra("plugged", 0);
+                //获取电池状态
+                status = intent.getIntExtra("status", BatteryManager.BATTERY_STATUS_UNKNOWN);
+                //电池剩余电量
+                mLevel = intent.getIntExtra("level", 0);
+                //获取电池满电量数值
+                intent.getIntExtra("scale", 0);
+                //获取电池电压
+                voltage = intent.getIntExtra("voltage", 0);
+                //获取电池温度
+                temperature = intent.getIntExtra("temperature", 0);
                 quality = " (" + mLevel + "%)";
                 if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
-                    /*if (plugType > 0) {
-                        batteryStatus = getString(R.string.charging);
-                        isChargingPass = true;
-                    }*/
                     batteryStatus = mContext.getString(R.string.charging);
                     isChargingPass = true;
                 } else if (status == BatteryManager.BATTERY_STATUS_DISCHARGING) {
@@ -80,18 +97,16 @@ public class BatteryChargeUtils {
                     batteryStatus = "unknown state";
                     isChargingPass = false;
                 }
-
-                //modify for cit crash when charge test bug23462 by songguangyu 20140505 start
-                /*if (isChargingPass && isStatePass){
-                    btnPass.setEnabled(true);
-                } else {
-                    btnPass.setEnabled(false);
-                }*/
-                //modify for cit crash when charge test bug23462 by songguangyu 20140505 end
             }
         }
     };
-    //当前充电电流 mA
+
+    /**
+     * 当前充电电流 mA
+     *
+     * @return the current charging current
+     */
+
     public int getCurrentChargingCurrent() {
         int result = 0;
         BufferedReader br = null;
@@ -117,47 +132,87 @@ public class BatteryChargeUtils {
             }
         }
 
-        if (Build.VERSION.SDK_INT>21){
-            return   batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        if (Build.VERSION.SDK_INT > 21) {
+            return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
         }
         return result;
     }
 
+    /**
+     * 获取电池状态
+     *
+     * @return the battery status
+     */
     public String getBatteryStatus() {
         return batteryStatus;
     }
 
+    /**
+     * Gets quality.
+     *
+     * @return the quality
+     */
     public String getQuality() {
         return quality;
     }
 
+    /**
+     * //获取电源信息
+     *
+     * @return the plug type
+     */
     public int getPlugType() {
         return plugType;
     }
 
+    /**
+     * 获取电池状态
+     *
+     * @return the status
+     */
     public int getStatus() {
         return status;
     }
 
+    /**
+     * 获取电量
+     *
+     * @return the level
+     */
     public int getmLevel() {
         int battery = 0;
-        if (Build.VERSION.SDK_INT>21)
-             battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-        if(mLevel!=0){
+        if (Build.VERSION.SDK_INT > 21)
+            battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+        if (mLevel != 0) {
             return mLevel;
-        }else {
-           return battery;
+        } else {
+            return battery;
         }
     }
 
+    /**
+     * 获取电池电压
+     *
+     * @return the voltage
+     */
     public int getVoltage() {
         return voltage;
     }
 
+    /**
+     * 获取电池温度
+     *
+     * @return the temperature
+     */
     public int getTemperature() {
         return temperature;
     }
 
+    /**
+     * 是否在充电
+     *
+     * @return the boolean
+     */
     public boolean isChargingPass() {
         return isChargingPass;
     }

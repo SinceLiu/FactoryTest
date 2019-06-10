@@ -3,28 +3,50 @@ package com.dinghmcn.android.wificonnectclient.utils;
 import android.content.Context;
 import android.os.StatFs;
 
-import com.dinghmcn.android.wificonnectclient.CITTestHelper;
-import com.dinghmcn.android.wificonnectclient.DiskManager;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+/**
+ * The type Usb disk utils.
+ */
 public class USBDiskUtils {
     private static final String MOUNTS_FILE = "/proc/mounts";
 
     private static String path = "/mnt/usbhost1";
+    /**
+     * The constant instance.
+     */
     public static USBDiskUtils instance;
     private Context mContext;
+
+    /**
+     * Instantiates a new Usb disk utils.
+     *
+     * @param mContext the m context
+     */
     public USBDiskUtils(Context mContext) {
         this.mContext = mContext;
         isMounted();
     }
+
+    /**
+     * Get instance usb disk utils.
+     *
+     * @param mContext the m context
+     * @return the usb disk utils
+     */
     public static USBDiskUtils getInstance(Context mContext){
         if (instance==null)
             instance=new USBDiskUtils(mContext);
         return instance;
     }
+
+    /**
+     * Is mounted boolean.
+     *
+     * @return the boolean
+     */
     public  boolean isMounted() {
 
         boolean blnRet = false;
@@ -55,10 +77,16 @@ public class USBDiskUtils {
         return blnRet;
     }
 
+    /**
+     * Get sd free size long.
+     *
+     * @return the long
+     */
     public long getSDFreeSize(){
-        if (!isMounted())
+        if (!isMounted()) {
             return 0;
-        path= DiskManager.getUsbStoragePath(CITTestHelper.getContext_x());
+        }
+        path= DiskManager.getUsbStoragePath(mContext);
         StatFs sf = new StatFs(path);
         //获取单个数据块的大小(Byte)
         long blockSize = sf.getBlockSize();
@@ -69,11 +97,18 @@ public class USBDiskUtils {
         //return (freeBlocks * blockSize)/1024;   //单位KB
         return (freeBlocks * blockSize)/1024 /1024; //单位MB
     }
+
+    /**
+     * Gets sd all size.
+     *
+     * @return the sd all size
+     */
     public long getSDAllSize() {
-        if (!isMounted())
+        if (!isMounted()) {
             return 0;
+        }
         //取得SD卡文件路径
-        path= DiskManager.getUsbStoragePath(CITTestHelper.getContext_x());
+        path= DiskManager.getUsbStoragePath(mContext);
         StatFs sf = new StatFs(path);
         //获取单个数据块的大小(Byte)
         long blockSize = sf.getBlockSize();

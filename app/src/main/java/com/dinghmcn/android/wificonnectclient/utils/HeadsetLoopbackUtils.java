@@ -9,11 +9,11 @@ import android.media.AudioTrack;
 import android.media.MediaRecorder;
 
 /**
+ * 录音测试
  *
  * @author zl121325
- * @date 2019/4/11
+ * @date 2019 /4/11
  */
-
 public class HeadsetLoopbackUtils {
     private static final String TAG = HeadsetLoopbackUtils.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
@@ -34,6 +34,12 @@ public class HeadsetLoopbackUtils {
         init();
     }
 
+    /**
+     * Gets instance.
+     *
+     * @param mContext the m context
+     * @return the instance
+     */
     public static HeadsetLoopbackUtils getInstance(Context mContext) {
         if (instance == null) {
             instance = new HeadsetLoopbackUtils(mContext);
@@ -41,11 +47,17 @@ public class HeadsetLoopbackUtils {
         return instance;
     }
 
+    /**
+     * 开始录音并播出
+     */
     public void start() {
         isRecording = true;
         new RecordPlayThread().start();
     }
 
+    /**
+     * 停止录音并清理
+     */
     public void stop() {
         isRecording = false;
 
@@ -74,7 +86,7 @@ public class HeadsetLoopbackUtils {
         int channelConfig = AudioFormat.CHANNEL_CONFIGURATION_MONO;
         int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
 
-        //Init AudioRecord
+        // 初始化录音器
         mInputBufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,
                 AudioFormat.CHANNEL_CONFIGURATION_MONO,
                 audioEncoding);
@@ -82,7 +94,7 @@ public class HeadsetLoopbackUtils {
                 sampleRateInHz, AudioFormat.CHANNEL_IN_MONO,
                 audioEncoding, mInputBufferSize);
 
-        //Init AudioTrack
+        //初始化播放器
         int mOutputBufferSize = AudioTrack.getMinBufferSize(sampleRateInHz,
                 AudioFormat.CHANNEL_CONFIGURATION_MONO,
                 audioEncoding);
@@ -92,16 +104,23 @@ public class HeadsetLoopbackUtils {
                 mOutputBufferSize,
                 AudioTrack.MODE_STREAM);
 
-
+        // 音频模式设为正常模式
         mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        // 调节音量
         float ratio = 0.7f;
         mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
                 (int) (ratio * mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
 
     }
 
-    boolean mIsStartRecordSuccess = false;
+	boolean mIsStartRecordSuccess = false;
+    /**
+     * 录音并播放线程
+     */
     class RecordPlayThread extends Thread {
+        /**
+         * Run.
+         */
         @Override
         public void run() {
             try {

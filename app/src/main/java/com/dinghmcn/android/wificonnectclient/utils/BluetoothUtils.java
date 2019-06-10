@@ -11,33 +11,36 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
 
-import com.dinghmcn.android.wificonnectclient.CITTestHelper;
-
 import java.util.Set;
 
 import static android.app.ActivityThread.TAG;
 
 
 /**
- * Created by zl121325 on 2019/4/11.
+ * 获取蓝牙相关信息
  */
-
 public class BluetoothUtils {
+    /**
+     * The M context.
+     */
     Context mContext;
     private BluetoothAdapter mBluetoothAdapter = null;
-    private CITTestHelper application;
-    private String bluetoothList = "";
     private Set<BluetoothDevice> bluetoothDevices;
     private Set<String> bluetoothDeviceAddresses;
     @SuppressLint("StaticFieldLeak")
     private static BluetoothUtils instance = null;
 
     private BluetoothUtils(Context mContext) {
-        application = new CITTestHelper();
         this.mContext = mContext;
         registerReceiver();
     }
 
+    /**
+     * Gets instance.
+     *
+     * @param context the context
+     * @return the instance
+     */
     public static BluetoothUtils getInstance(@NonNull Context context) {
         if (instance == null) {
             instance = new BluetoothUtils(context);
@@ -45,11 +48,16 @@ public class BluetoothUtils {
         return instance;
     }
 
+    // 监听蓝牙事件广播
     private void registerReceiver() {
         IntentFilter intentFilter = new IntentFilter();
+        // 开始搜索蓝牙设置
         intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        // 蓝牙状态改变
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        // 搜索蓝牙设置完成
         intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        // 发现蓝牙设备
         intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
         mContext.registerReceiver(blueToothReceiver, intentFilter);
     }
@@ -61,8 +69,10 @@ public class BluetoothUtils {
 
             assert action != null;
             switch (action) {
-                case  BluetoothAdapter.ACTION_STATE_CHANGED:
+                case BluetoothAdapter.ACTION_STATE_CHANGED:
+                    // 蓝牙状态改变
                     if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
+                        // 蓝牙开启
                         if (!mBluetoothAdapter.isDiscovering()) {
                             mBluetoothAdapter.startDiscovery();
                         }
@@ -70,11 +80,12 @@ public class BluetoothUtils {
                     break;
 
                 case BluetoothAdapter.ACTION_DISCOVERY_STARTED:
-                    bluetoothList = "";
                     break;
 
                 case BluetoothDevice.ACTION_FOUND:
+                    // 发现蓝牙设备
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    // 保存发现的蓝牙设备，并根据MAC地址设备防止重复加入
                     if (!bluetoothDeviceAddresses.contains(device.getAddress())) {
                         Log.d(TAG, device.getName() + "---" + device.getAddress());
                         bluetoothDeviceAddresses.add(device.getAddress());
@@ -83,7 +94,6 @@ public class BluetoothUtils {
                     break;
 
                 case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-                    application.setBluetoothList(bluetoothList);
                     break;
 
                 default:
@@ -91,29 +101,42 @@ public class BluetoothUtils {
         }
     };
 
+    /**
+     * 开启蓝牙
+     */
     public void bluetoothOpen() {
         Log.w(TAG, "BlueToothOpen: ");
         bluetoothDevices = new ArraySet<>();
         bluetoothDeviceAddresses = new ArraySet<>();
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter != null && !mBluetoothAdapter.isEnabled()) {
+            // 蓝牙未开启则开启蓝牙
             mBluetoothAdapter.enable();
         } else {
+            // 蓝牙已开启则开始搜索蓝牙设备
             assert mBluetoothAdapter != null;
             mBluetoothAdapter.startDiscovery();
         }
     }
 
+    /**
+     * 返回发现的蓝牙设备
+     *
+     * @return the bluetooth devices
+     */
     public Set<BluetoothDevice> getBluetoothDevices() {
         return bluetoothDevices;
     }
 
+    /**
+     * 清理
+     */
     public void exit() {
         mContext.unregisterReceiver(blueToothReceiver);
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
         }
-        if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON && !application.isBlueToothOpened()) {
+        if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
             mBluetoothAdapter.disable();
             Log.e(TAG, "关闭蓝牙");
         }

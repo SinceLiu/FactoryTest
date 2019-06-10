@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * The type Sensor manager utils.
+ * 获取传感器相关信息
  *
  * @author dinghmcn
  * @date 2018 /4/28 15:35
@@ -26,6 +26,10 @@ public class SensorManagerUtils implements SensorEventListener {
 
   @Nullable
   private static SensorManagerUtils instance = null;
+
+  /**
+   *  需要获取信息的传感器
+   */
   @NonNull
   private List<Integer> mSensorList = Arrays.asList(Sensor.TYPE_MAGNETIC_FIELD,
       Sensor.TYPE_PROXIMITY, Sensor.TYPE_LIGHT, Sensor.TYPE_ACCELEROMETER, Sensor.TYPE_GYROSCOPE);
@@ -38,13 +42,13 @@ public class SensorManagerUtils implements SensorEventListener {
     registerListeners();
   }
 
-  /**
-   * Gets instance.
-   *
-   * @param context the context
-   * @return the instance
-   */
-  @Nullable
+    /**
+     * Gets instance.
+     *
+     * @param context the context
+     * @return the instance
+     */
+    @Nullable
   public static SensorManagerUtils getInstance(@NonNull Context context) {
     if (null == instance) {
       instance = new SensorManagerUtils(context);
@@ -52,12 +56,12 @@ public class SensorManagerUtils implements SensorEventListener {
     return instance;
   }
 
-  /**
-   * On sensor changed.
-   *
-   * @param event the event
-   */
-  @Override
+    /**
+     * 存储传感器信息
+     *
+     * @param event the event
+     */
+    @Override
   public void onSensorChanged(@NonNull SensorEvent event) {
     try {
       Log.w(TAG, "onSensorChanged: "+ event.sensor.getType()+"---"+Arrays.toString(event.values));
@@ -67,17 +71,20 @@ public class SensorManagerUtils implements SensorEventListener {
     }
   }
 
-  /**
-   * On accuracy changed.
-   *
-   * @param sensor   the sensor
-   * @param accuracy the accuracy
-   */
-  @Override
+    /**
+     * On accuracy changed.
+     *
+     * @param sensor   the sensor
+     * @param accuracy the accuracy
+     */
+    @Override
   public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
   }
 
+  /**
+   * 监听传感器改变信息
+   */
   private void registerListeners() {
     for (int sensor : mSensorList) {
       mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(sensor),
@@ -85,12 +92,12 @@ public class SensorManagerUtils implements SensorEventListener {
     }
   }
 
-  /**
-   * Gets json object.
-   *
-   * @return the json object
-   */
-  @NonNull
+    /**
+     * Gets json object.
+     *
+     * @return the json object
+     */
+    @NonNull
   public JSONObject getJSONObject() {
     return mJSONObject;
   }

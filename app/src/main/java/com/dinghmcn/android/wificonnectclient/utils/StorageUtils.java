@@ -6,15 +6,12 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.text.format.Formatter;
 
-import com.dinghmcn.android.wificonnectclient.DiskManager;
-
 import java.io.File;
 import java.text.DecimalFormat;
 
 /**
- * Created by zl121325 on 2019/4/14.
+ * 获取存储相关信息
  */
-
 public class StorageUtils {
 
     private Context mContext;
@@ -25,6 +22,12 @@ public class StorageUtils {
         this.mContext = context;
     }
 
+    /**
+     * Get instance storage utils.
+     *
+     * @param mContext the m context
+     * @return the storage utils
+     */
     public static StorageUtils getInstance(Context mContext){
         if (null == instance){
             instance = new StorageUtils(mContext);
@@ -32,7 +35,12 @@ public class StorageUtils {
         return instance;
     }
 
-    //rom
+    /**
+     * Gets rom total storage.
+     *
+     * @return the rom total storage
+     */
+//rom
     public String getRomTotalStorage() {
         long totalSize = 0;
         final int[] phoneSpaceVlaue = {1, 2, 4, 8, 16, 32, 64, 128};
@@ -65,13 +73,23 @@ public class StorageUtils {
         return "-1";
     }
 
+    /**
+     * Gets rom available storage.
+     *
+     * @return the rom available storage
+     */
     public String getRomAvailableStorage()
     {
         return Formatter.formatFileSize(mContext,
                 Environment.getDataDirectory().getUsableSpace());
     }
 
-    // sd
+    /**
+     * Gets sd total storage.
+     *
+     * @return the sd total storage
+     */
+// sd
     public String getSdTotalStorage() {
         String sdPatch = DiskManager.getSdStoragePath(mContext);
         return DiskManager.isExistDisk(sdPatch)
@@ -79,6 +97,11 @@ public class StorageUtils {
                 : "-1";
     }
 
+    /**
+     * Gets sd available storage.
+     *
+     * @return the sd available storage
+     */
     public String getSdAvailableStorage()
     {
         String sdPatch = DiskManager.getSdStoragePath(mContext);

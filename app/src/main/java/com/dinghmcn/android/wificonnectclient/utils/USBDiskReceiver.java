@@ -5,11 +5,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
+/**
+ * USB设备插拔事件监听
+ */
 public class USBDiskReceiver extends BroadcastReceiver {
     private static final String TAG = "USBDiskReceiver";
 
+    /**
+     * On receive.
+     *
+     * @param context the context
+     * @param intent  the intent
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();

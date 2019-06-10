@@ -59,24 +59,24 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * main.
+ * 主界面窗口
  *
  * @author dinghmcn
  * @date 2018 /4/20 10:47
  */
 public class MainActivity extends Activity {
     /**
-     * The Tag.
+     * 命令标识
      */
-    protected final String TAG = getClass().getSimpleName();
-
+    public static final int CMD_CODE = 0xd9;
     /**
-     * The constant REQUEST_CAMERA_CODE.
+     * 相机测试结果返回标识
+     */
+    public static final int REQUEST_CAMERA_CODE = 9;
+    /**
+     * 是否输出日志
      */
     private static final boolean mPrintLog = false;
-    public static final int CMD_CODE = 0xd9;
-    public boolean isCameraOpen = false;
-    public static final int REQUEST_CAMERA_CODE = 9;
     private static final String GET = "get";
     private static boolean isCatchKey = false;
     private static boolean isCatchTouch = false;
@@ -87,6 +87,14 @@ public class MainActivity extends Activity {
     @Nullable
     private static JSONObject mTouchJsonObject;
     private static JSONArray mTouchMoveJsonObject;
+    /**
+     * 日志标志.
+     */
+    protected final String TAG = getClass().getSimpleName();
+    /**
+     * 是否在测试相机
+     */
+    public boolean isCameraOpen = false;
     private ScrollView mScrollView;
     private TextView mTextView;
     private StringBuilder mConnectMessage;
@@ -102,9 +110,7 @@ public class MainActivity extends Activity {
     private HeadsetLoopbackUtils headsetLoopbackUtils;
     private Gson gson = new Gson();
     private DataModel dataModel;
-    USBDiskReceiver usbDiskReceiver;
-
-//    public static String mCacheDir = null;
+    private USBDiskReceiver usbDiskReceiver;
 
     /**
      * On create.
@@ -128,12 +134,11 @@ public class MainActivity extends Activity {
         filter.addAction("android.intent.action.MEDIA_REMOVED");
         registerReceiver(usbDiskReceiver, filter);
         testNext();
-
-//		String path = getExternalCacheDir() + "/" + System.currentTimeMillis() + ".txt";
-//		saveDatabjectToPath(path, "test for hqb");
-//		mCacheDir = getExternalCacheDir().getAbsolutePath();
     }
 
+    /**
+     * 准备工作，初始化测试项、打开Wifi并连接服务
+     */
     private void testNext() {
         mConnectMessage = new StringBuilder();
         mMainHandler = new MainHandel(this);
@@ -143,10 +148,11 @@ public class MainActivity extends Activity {
         bluetoothUtils = BluetoothUtils.getInstance(this);
         bluetoothUtils.bluetoothOpen();
         headsetLoopbackUtils = HeadsetLoopbackUtils.getInstance(this);
-//        outPutMessage("headsetLoopbackUtils.start()");
+        outPutMessage("headsetLoopbackUtils.start()");
         versionUtils = VersionUtils.getInstance(this);
         storageUtils = StorageUtils.getInstance(this);
         assert mWifiManagerUtils != null;
+        // 获取服务器信息
         String ip = loadFromSDFile("socketIP.txt");
         if (null == ip || ip.trim().isEmpty()) {
 //            prepareConnectServer("{\"IP\":\"172.17.136.145\",\"Port\":12345,\"SSID\":\"celltel\"," +
@@ -175,7 +181,6 @@ public class MainActivity extends Activity {
         String[] permissions = CheckPermissionUtils.checkPermission(this);
         if (permissions.length == 0) {
             //权限都申请了
-//      cameraTask();
             Log.d(TAG, "permission all");
         } else {
             Log.d(TAG, "request permissions : " + Arrays.toString(permissions));
@@ -216,6 +221,11 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * 打印消息
+     *
+     * @param message
+     */
     private void outPutMessage(String message) {
         mConnectMessage.append(message).append("\r\n");
         mTextView.setText(mConnectMessage);
@@ -226,6 +236,11 @@ public class MainActivity extends Activity {
         outPutMessage(getString(idRes));
     }
 
+    /**
+     * 打印日志
+     *
+     * @param message
+     */
     private void outPutLog(String message) {
         if (mPrintLog) {
             outPutMessage(message);
@@ -237,7 +252,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * On key down boolean.
+     * 记录按键信息
      *
      * @param keyCode the key code
      * @param event   the event
@@ -261,7 +276,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Dispatch touch event boolean.
+     * 记录触摸信息
      *
      * @param ev the ev
      * @return the boolean
@@ -314,6 +329,11 @@ public class MainActivity extends Activity {
         return super.dispatchTouchEvent(ev);
     }
 
+    /**
+     * 获取服务器信息，准备连接服务器
+     *
+     * @param connectInfo
+     */
     private void prepareConnectServer(@Nullable String connectInfo) {
         Log.w(TAG, "prepareConnectServer: " + connectInfo);
         if (connectInfo != null && !connectInfo.isEmpty()) {
@@ -344,6 +364,9 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * 获取电池信息
+     */
     private void getBatteryInfo() {
         Log.w(TAG, "getBatteryInfo: " + batteryChargeUtils.getBatteryStatus() + "---"
                 + batteryChargeUtils.getQuality() + "---" + batteryChargeUtils.getCurrentChargingCurrent() +
@@ -388,6 +411,49 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         super.onBackPressed();
         finish();
+    }
+
+    private String loadFromSDFile(String fileName) {
+        fileName = "/" + fileName;
+        String result = null;
+        try {
+            File f = new File(Environment.getExternalStorageDirectory().getPath() + fileName);
+            int length = (int) f.length();
+            byte[] buff = new byte[length];
+            FileInputStream fin = new FileInputStream(f);
+            fin.read(buff);
+            fin.close();
+            result = new String(buff, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(MainActivity.this, "没有找到指定文件", Toast.LENGTH_SHORT).show();
+        }
+        return result;
+    }
+
+    /**
+     * 关机
+     */
+    private void shutdownSystem() {
+        try {
+            Intent intent = new Intent("android.intent.action.ACTION_REQUEST_SHUTDOWN");
+            intent.putExtra("android.intent.extra.KEY_CONFIRM", false);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e("TAG", e.toString());
+        }
+    }
+
+    /**
+     * 重启
+     */
+    private void rebootSystem() {
+        Intent intent = new Intent("android.intent.action.REBOOT");
+        intent.putExtra("nowait", 1);
+        intent.putExtra("interval", 1);
+        intent.putExtra("window", 0);
+        sendBroadcast(intent);
     }
 
     @SuppressLint("HandlerLeak")
@@ -437,34 +503,34 @@ public class MainActivity extends Activity {
 				}
 //                dataModel = gson.fromJson((String) msg.obj, DataModel.class);
 
-                // shutdown system
+                // 关机
                 if (GET.equals(dataModel.getShutdown())) {
                     shutdownSystem();
                 }
 
-                // message
+                // 消息
                 String message = dataModel.getShowMessage();
                 if (null != message && !message.isEmpty()) {
                     outPutMessage(message);
                 }
 
-                // base info
+
                 if (GET.equals(dataModel.getSn()) || GET.equals(dataModel.getDisk())
                         || GET.equals(dataModel.getSd()) || GET.equals(dataModel.getVersion())
                         || GET.equals(dataModel.getBattery()) || GET.equals(dataModel.getOtg())) {
-                    // sn
+                    // 串号
                     dataModel.setSn(VersionUtils.getSerialNumber());
 
-                    // disk
+                    // 存储
                     dataModel.setDisk(storageUtils.getRomAvailableStorage() + "，" + storageUtils.getRomTotalStorage());
 
-                    // sd
+                    // sd卡
                     dataModel.setSd(storageUtils.getSdAvailableStorage() + "，" + storageUtils.getSdTotalStorage());
 
-                    // version
+                    // 版本号
                     dataModel.setVersion(versionUtils.getSoftwareVersion());
 
-                    // battery
+                    // 电池
                     dataModel.setBattery(batteryChargeUtils.getmLevel() + "%，" +
                             "" + (batteryChargeUtils.getTemperature() / 10.0f) + "C，" +
                             "" + (batteryChargeUtils.getVoltage() / 1000.0f) + "V");
@@ -477,30 +543,30 @@ public class MainActivity extends Activity {
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                 }
 
-                // sensor
+                // 传感器
                 if (GET.equals(dataModel.getAccelerometer()) || GET.equals(dataModel.getLight())
                         || GET.equals(dataModel.getProximity()) || GET.equals(dataModel.getMagnetometer())
                         || GET.equals(dataModel.getGyroscope())) {
                     SensorManagerUtils sensorManagerUtils = SensorManagerUtils.getInstance(mainActivity);
                     postDelayed(() -> {
                         assert sensorManagerUtils != null;
-
+                        // 加速度传感器
                         String accelerometer = sensorManagerUtils.getJSONObject()
                                 .optString(Sensor.TYPE_ACCELEROMETER + "", "error");
                         dataModel.setAccelerometer(null != accelerometer ? accelerometer : "error");
-
+                        // 光感
                         String light = sensorManagerUtils.getJSONObject()
                                 .optString(Sensor.TYPE_LIGHT + "", "error");
                         dataModel.setLight(light);
-
+                        // 距离传感器
                         String proximity = sensorManagerUtils.getJSONObject()
                                 .optString(Sensor.TYPE_PROXIMITY + "", "error");
                         dataModel.setProximity(proximity);
-
+                        // 磁感应器
                         String magnetometer = sensorManagerUtils.getJSONObject()
                                 .optString(Sensor.TYPE_MAGNETIC_FIELD + "", "error");
                         dataModel.setMagnetometer(magnetometer);
-
+                        // 陀螺仪
                         String gyroscope = sensorManagerUtils.getJSONObject()
                                 .optString(Sensor.TYPE_GYROSCOPE + "", "error");
                         dataModel.setGyroscope(gyroscope);
@@ -510,7 +576,7 @@ public class MainActivity extends Activity {
                     }, 1000);
                 }
 
-                // camera
+                // 相机
                 String cameraInfo = dataModel.getCamera();
                 if (null != cameraInfo && cameraInfo.contains("-")) {
                     Intent intent20 = new Intent(MainActivity.this, CameraActivity.class)
@@ -523,7 +589,7 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                // bluetooth
+                // 蓝牙
                 if (GET.equals(dataModel.getBluetooth())) {
                     bluetoothUtils = BluetoothUtils.getInstance(MainActivity.this);
                     postDelayed(() -> {
@@ -537,7 +603,7 @@ public class MainActivity extends Activity {
                     }, 100);
                 }
 
-                //vibrator
+                // 振动
                 if (GET.equals(dataModel.getVibrator())) {
                     Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                     if (null != vibrator && vibrator.hasVibrator()) {
@@ -545,7 +611,7 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                // dial
+                // 拨号
                 if (GET.equals(dataModel.getDial())) {
                     Uri uri = Uri.parse("tel:" + 10010);
 
@@ -586,12 +652,12 @@ public class MainActivity extends Activity {
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                 }
 
-                // record
+                // 录音
                 if (GET.equals(dataModel.getRecord())) {
                     headsetLoopbackUtils.start();
                 }
 
-                // key
+                // 按键
                 if (GET.equals(dataModel.getKey())) {
                     int time = dataModel.getTimeout() * 1000;
                     isCatchKey = true;
@@ -604,7 +670,7 @@ public class MainActivity extends Activity {
                     }, time);
                 }
 
-                // touch
+                // 触摸
                 if (GET.equals(dataModel.getTouch())) {
                     isCatchTouch = true;
                     int time = dataModel.getTimeout() * 1000;
@@ -617,7 +683,7 @@ public class MainActivity extends Activity {
                     }, time);
                 }
 
-                // screen
+                // 屏幕
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
                     int resId = mainActivity.getResources()
@@ -636,6 +702,7 @@ public class MainActivity extends Activity {
                 }
             } else {
                 switch (EnumCommand.values()[msg.what]) {
+                    // 连接服务器返回状态
                     case CONNECT:
                         int connect = msg.arg1;
                         switch (connect) {
@@ -651,6 +718,7 @@ public class MainActivity extends Activity {
                             default:
                         }
                         break;
+                    // 接收命令状态
                     case COMMAND:
                         int command = msg.arg1;
                         switch (command) {
@@ -673,42 +741,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private String loadFromSDFile(String fileName) {
-        fileName = "/" + fileName;
-        String result = null;
-        try {
-            File f = new File(Environment.getExternalStorageDirectory().getPath() + fileName);
-            int length = (int) f.length();
-            byte[] buff = new byte[length];
-            FileInputStream fin = new FileInputStream(f);
-            fin.read(buff);
-            fin.close();
-            result = new String(buff, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(MainActivity.this, "没有找到指定文件", Toast.LENGTH_SHORT).show();
-        }
-        return result;
-    }
-
-    private void shutdownSystem() {
-        try {
-            Intent intent = new Intent("android.intent.action.ACTION_REQUEST_SHUTDOWN");
-            intent.putExtra("android.intent.extra.KEY_CONFIRM", false);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-        } catch (Exception e) {
-            Log.e("TAG", e.toString());
-        }
-    }
-
-    private void rebootSystem() {
-        Intent intent = new Intent("android.intent.action.REBOOT");
-        intent.putExtra("nowait", 1);
-        intent.putExtra("interval", 1);
-        intent.putExtra("window", 0);
-        sendBroadcast(intent);
-    }
 
 	public static final String NOMEDIA = ".nomedia";
 

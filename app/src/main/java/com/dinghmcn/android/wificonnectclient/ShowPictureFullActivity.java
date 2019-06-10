@@ -4,27 +4,26 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
 /**
- * The type Show picture full activity.
+ * 全屏显示纯色判断屏幕是否有坏点
  *
  * @author dinghmcn
- * @date 2018 /4/20 10:47
+date 2018 /4/20 10:47
  */
 public class ShowPictureFullActivity extends AppCompatActivity {
   private static final String TAG = "ShowPictureFullActivity";
 
   private ImageView mImageView;
 
-  /**
-   * On create.
-   *
-   * @param savedInstanceState the saved instance state
-   */
-  @Override
+    /**
+     * On create.
+     *
+     * @param savedInstanceState the saved instance state
+     */
+    @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -36,43 +35,40 @@ public class ShowPictureFullActivity extends AppCompatActivity {
 
     setContentView(R.layout.activity_full_show_picture);
 
-    mImageView = (ImageView) findViewById(R.id.imageView);
+    mImageView = findViewById(R.id.imageView);
   }
 
-  /**
-   * On resume.
-   */
-  @Override
+    /**
+     * On resume.
+     */
+    @Override
   protected void onResume() {
     super.onResume();
-
+    // 获取要显示的颜色
     int resId = getIntent().getIntExtra("res_id", -1);
     if (resId > 0) {
       mImageView.setImageResource(resId);
-      new Handler().postDelayed(new Runnable() {
-        @Override
-        public void run() {
-          finish();
-        }
-      },5000);
+      // 5s 后自动退出
+      new Handler().postDelayed(() -> finish(),5000);
     } else {
       finish();
     }
   }
 
-  /**
-   * On pause.
-   */
-  @Override
+    /**
+     * On pause.
+     */
+    @Override
   protected void onPause() {
     super.onPause();
+      // 暂停则退出
     finish();
   }
 
-  /**
-   * On back pressed.
-   */
-  @Override
+    /**
+     * On back pressed.
+     */
+    @Override
   public void onBackPressed() {
     super.onBackPressed();
     finish();

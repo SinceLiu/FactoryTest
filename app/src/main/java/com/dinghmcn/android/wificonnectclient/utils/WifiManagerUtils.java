@@ -10,14 +10,13 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The type Wifi manager utils.
+ * WiFi相关信息获取
  *
  * @author dinghmcn
- * @date 2018 /4/25 16:09
+ * date 2018 /4/25 16:09
  */
 public class WifiManagerUtils {
   private static final String TAG = "WifiManagerUtils";
@@ -38,13 +37,13 @@ public class WifiManagerUtils {
         .getSystemService(Context.WIFI_SERVICE);
   }
 
-  /**
-   * Gets instance.
-   *
-   * @param context the context
-   * @return the instance
-   */
-  @Nullable
+    /**
+     * Gets instance.
+     *
+     * @param context the context
+     * @return the instance
+     */
+    @Nullable
   public static WifiManagerUtils getInstance(@NonNull Context context) {
     if (instance == null) {
       instance = new WifiManagerUtils(context);
@@ -52,14 +51,14 @@ public class WifiManagerUtils {
     return instance;
   }
 
-  /**
-   * Connect wifi boolean.
-   *
-   * @param ssid     the ssid
-   * @param password the password
-   * @return the boolean
-   */
-  public boolean connectWifi(@NonNull String ssid, String password) {
+    /**
+     * 连接指定wifi
+     *
+     * @param ssid     the ssid
+     * @param password the password
+     * @return the boolean
+     */
+    public boolean connectWifi(@NonNull String ssid, String password) {
     Log.d(TAG, "SSID:" + ssid + " password:" + password);
 
     //如果之前有类似的配置
@@ -77,26 +76,27 @@ public class WifiManagerUtils {
     }
   }
 
-  /**
-   * Is wifi enabled boolean.
-   *
-   * @return the boolean
-   */
-  public boolean isWifiEnabled() {
+    /**
+     * Is wifi enabled boolean.
+     *
+     * @return the boolean
+     */
+    public boolean isWifiEnabled() {
     Log.d(TAG, "isWifiEnabled():" + mWifiManager.isWifiEnabled());
     return mWifiManager.isWifiEnabled();
   }
 
-  /**
-   * Is wifi connected boolean.
-   *
-   * @param ssid the ssid
-   * @return the boolean
-   */
-  public boolean isWifiConnected(String ssid) {
+    /**
+     * 判断wifi是否连接
+     *
+     * @param ssid the ssid
+     * @return the boolean
+     */
+    public boolean isWifiConnected(String ssid) {
     ConnectivityManager connectivityManager = (ConnectivityManager) mContext.getSystemService(
         Context.CONNECTIVITY_SERVICE);
     NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+    // 判断是否是wifi连接而不是数据
     if (activeNetInfo != null && activeNetInfo.getType() == ConnectivityManager.TYPE_WIFI
         && activeNetInfo.isConnected()) {
       Log.d(TAG, activeNetInfo.toString());
@@ -107,13 +107,20 @@ public class WifiManagerUtils {
     return false;
   }
 
-  /**
-   * Open wifi.
-   */
-  public void openWifi() {
+    /**
+     * 开启
+     */
+    public void openWifi() {
     mWifiManager.setWifiEnabled(true);
   }
 
+  /**
+   * 新建wifi配置
+   * @param ssid
+   * @param password
+   * @param type
+   * @return
+   */
   @NonNull
   private WifiConfiguration createWifiConfig(String ssid, String password, int type) {
     //初始化WifiConfiguration
@@ -160,6 +167,11 @@ public class WifiManagerUtils {
     return wifiConfiguration;
   }
 
+  /**
+   * 判断是否发现该wifi
+   * @param ssid
+   * @return
+   */
   @Nullable
   private WifiConfiguration isExist(String ssid) {
     List<WifiConfiguration> configs = mWifiManager.getConfiguredNetworks();
@@ -172,6 +184,11 @@ public class WifiManagerUtils {
     return null;
   }
 
+  /**
+   * 获取wifi加密类型
+   * @param ssid
+   * @return
+   */
   private int getType(@NonNull String ssid) {
 
     List<ScanResult> mScanResultList = mWifiManager.getScanResults();
@@ -180,10 +197,13 @@ public class WifiManagerUtils {
       Log.w(TAG, "getType: "+scanResult.level);
       if (ssid.equals(scanResult.SSID)) {
         if (scanResult.capabilities.contains("WPA")) {
+          // 使用 WPA 加密
           return WIFICIPHER_WPA;
         } else if (scanResult.capabilities.contains("WEP")) {
+          // 使用 WEP 加密
           return WIFICIPHER_WEP;
         } else {
+          // 未加密
           return WIFICIPHER_NOPASS;
         }
       } else {
@@ -193,7 +213,12 @@ public class WifiManagerUtils {
 
     return WIFICIPHER_WPA;
   }
-  //获取rssi
+
+    /**
+     * 获取周围Wifi列表
+     *
+     * @return the list
+     */
   public List<ScanResult> getWifis(){
     return mWifiManager.getScanResults();
 
