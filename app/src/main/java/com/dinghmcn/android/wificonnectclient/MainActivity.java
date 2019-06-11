@@ -535,7 +535,9 @@ public class MainActivity extends Activity {
                     outPutMessage(message);
                 }
 
-
+				if(dataModel != null){
+                	dataModel.setSn(VersionUtils.getSerialNumber());
+				}
                 if (GET.equals(dataModel.getSn()) || GET.equals(dataModel.getDisk())
                         || GET.equals(dataModel.getSd()) || GET.equals(dataModel.getVersion())
                         || GET.equals(dataModel.getBattery()) || GET.equals(dataModel.getOtg())) {
