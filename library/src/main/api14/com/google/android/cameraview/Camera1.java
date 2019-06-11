@@ -220,20 +220,26 @@ class Camera1 extends CameraViewImpl {
     @Override
     void takePicture() {
         if (!isCameraOpened()) {
-            throw new IllegalStateException(
-                    "Camera is not ready. Call start() before takePicture().");
+//            throw new IllegalStateException(
+//                    "Camera is not ready. Call start() before takePicture().");
+			start();
         }
-        if (getAutoFocus()) {
-            mCamera.cancelAutoFocus();
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                @Override
-                public void onAutoFocus(boolean success, Camera camera) {
-                    takePictureInternal();
-                }
-            });
-        } else {
-            takePictureInternal();
-        }
+
+        if(isCameraOpened()) {
+			if (getAutoFocus()) {
+				mCamera.cancelAutoFocus();
+				mCamera.autoFocus(new Camera.AutoFocusCallback() {
+					@Override
+					public void onAutoFocus(boolean success, Camera camera) {
+						takePictureInternal();
+					}
+				});
+			} else {
+				takePictureInternal();
+			}
+		}else {
+			mCallback.onPictureTaken(null);
+		}
     }
 
     void takePictureInternal() {
@@ -374,6 +380,7 @@ class Camera1 extends CameraViewImpl {
 
     private void releaseCamera() {
         if (mCamera != null) {
+        	new Exception("releaseCamera").printStackTrace();
             mCamera.release();
             mCamera = null;
             mCallback.onCameraClosed();

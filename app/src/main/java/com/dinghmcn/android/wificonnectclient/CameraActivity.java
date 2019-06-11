@@ -57,8 +57,10 @@ public class CameraActivity extends AppCompatActivity implements
 
         @Override
         public void onPictureTaken(CameraView cameraView, final byte[] data) {
-            Log.d(TAG, "onPictureTaken " + data.length);
-            Objects.requireNonNull(getBackgroundHandler()).post(() -> createFile(data));
+        	if(data != null) {
+				Log.d(TAG, "onPictureTaken " + data.length);
+				Objects.requireNonNull(getBackgroundHandler()).post(() -> createFile(data));
+			}
         }
 
     };

@@ -373,6 +373,38 @@ public class ConnectManagerUtils {
         });
     }
 
+	/**
+	 * 发送消息给服务器
+	 *
+	 * @param message the message
+	 */
+	public void sendErrorMessageToServer(final String message) {
+		Log.d(TAG, "Send error message :" + message);
+		assert mThreadPool != null;
+		mThreadPool.execute(() -> {
+			try {
+				Log.d(TAG, "Socket status:" + !mConnected + mSocket.isClosed() + !mSocket.isConnected()
+						+ mSocket.isOutputShutdown());
+				// 判断连接是否正常
+				if (!mConnected || mSocket.isClosed() || !mSocket.isConnected()
+						|| mSocket.isOutputShutdown()) {
+					sendMessage(EnumCommand.CONNECT.ordinal(), CONNECT_CLOSED);
+					return;
+				}
+				out = mSocket.getOutputStream();
+				byte[] bytes = message.replace("\\", "").getBytes(StandardCharsets.UTF_8);
+
+				byte[] buffer = new byte[bytes.length + 1];
+				buffer[0] = 0;
+				System.arraycopy(bytes, 0, buffer, 1, buffer.length - 1);
+				out.write(buffer);
+				out.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
     private void sendMessage(int what, int arg1) {
         sendMessage(what, arg1, null);
     }

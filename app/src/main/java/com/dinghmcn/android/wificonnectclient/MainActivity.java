@@ -499,6 +499,7 @@ public class MainActivity extends Activity {
             if (msg.what == CMD_CODE) {
                 Gson gson = new Gson();
                 String data = (String)msg.obj;
+                String saveData = (String)msg.obj;
                 String tmpData = data.trim();
                 if(!tmpData.startsWith("{") && !TextUtils.isEmpty(mLastPartInfo)){
                 	data = mLastPartInfo + data;
@@ -513,7 +514,7 @@ public class MainActivity extends Activity {
 				}
                 try {
 //					dataModel = gson.fromJson((String) msg.obj, DataModel.class);
-					saveDatabjectToPath(getExternalCacheDir() + "/" + dir + "/" + System.currentTimeMillis() + ".txt", data);
+					saveDatabjectToPath(getExternalCacheDir() + "/" + dir + "/" + System.currentTimeMillis() + ".txt", saveData);
 					dataModel = gson.fromJson(data, DataModel.class);
 				}catch (Exception e){
                 	e.printStackTrace();
@@ -521,6 +522,8 @@ public class MainActivity extends Activity {
 //					saveDatabjectToPath(path, (String) msg.obj);
 					saveDatabjectToPath(path, data);
                 	dataModel = null;
+					mConnectManager.sendErrorMessageToServer("error");
+					return;
 				}
 //                dataModel = gson.fromJson((String) msg.obj, DataModel.class);
 
