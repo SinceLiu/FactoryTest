@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
     /**
      * 是否输出日志
      */
-    private static final boolean mPrintLog = false;
+    private static final boolean mPrintLog = true;
     private static final String GET = "get";
     private static boolean isCatchKey = false;
     private static boolean isCatchTouch = false;
@@ -211,6 +211,8 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.d(TAG, "result:" + requestCode + "/" + resultCode);
+		Log.v("hqb", "hqb__MainActivity__onActivityResult__requestCode == REQUEST_CAMERA_CODE = " + (requestCode == REQUEST_CAMERA_CODE)
+			+ "__resultCode == RESULT_OK = " + (resultCode == RESULT_OK) + "__data = " + data);
         if (requestCode == REQUEST_CAMERA_CODE) {
             isCameraOpen = false;
             Log.w(TAG, "onActivityResult: " + "11 " + (null == data));

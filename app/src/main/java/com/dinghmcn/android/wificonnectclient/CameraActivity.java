@@ -60,6 +60,10 @@ public class CameraActivity extends AppCompatActivity implements
         	if(data != null) {
 				Log.d(TAG, "onPictureTaken " + data.length);
 				Objects.requireNonNull(getBackgroundHandler()).post(() -> createFile(data));
+			}else {
+        		Log.v("hqb", "hqb__CameraActivityfinish__onPictureTaken__data is null");
+				setResult(RESULT_CANCELED);
+				finish();
 			}
         }
 
@@ -134,6 +138,7 @@ public class CameraActivity extends AppCompatActivity implements
         mCameraView.stop();
         super.onPause();
         Log.d(TAG, "onPause()");
+		Log.v("hqb", "hqb__CameraActivityfinish__onPause");
         finish();
     }
 
@@ -174,6 +179,7 @@ public class CameraActivity extends AppCompatActivity implements
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+		Log.v("hqb", "hqb__CameraActivityfinish__onBackPressed");
         finish();
     }
 
@@ -192,9 +198,11 @@ public class CameraActivity extends AppCompatActivity implements
             Log.w(TAG, "Picture save to " + file);
             // 返回照片地址
             setResult(RESULT_OK, new Intent().setData(Uri.fromFile(file)));
+			Log.v("hqb", "hqb__CameraActivityfinish__createFile__success");
             finish();
         } catch (IOException e) {
             Log.w(TAG, "Cannot write to " + file, e);
+			Log.v("hqb", "hqb__CameraActivityfinish__createFile__failed");
             setResult(RESULT_CANCELED);
             finish();
         }

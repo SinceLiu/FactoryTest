@@ -277,7 +277,8 @@ public class ConnectManagerUtils {
                     return;
                 }
                 // 使用SMB把文件传送到指定位置
-                String remoteUrl = "smb://software:*@192.168.1.240/software_2017/tmp";
+//                String remoteUrl = "smb://software:*@192.168.1.240/software_2017/tmp";
+				String remoteUrl = "smb://test:123@192.168.1.200/Image/CameraTemp";
                 String sn = VersionUtils.getSerialNumber();
                 SmbFile remoteFile = new SmbFile(remoteUrl + "/" + sn + "-" + file.getName());
                 in = new BufferedInputStream(new FileInputStream(file));
