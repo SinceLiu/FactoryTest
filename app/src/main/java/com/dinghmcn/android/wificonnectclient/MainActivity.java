@@ -65,6 +65,7 @@ import java.util.Set;
  * @date 2018 /4/20 10:47
  */
 public class MainActivity extends Activity {
+	final int MSG_TESTACTIVITY = 0x1000;
     /**
      * 命令标识
      */
@@ -73,6 +74,10 @@ public class MainActivity extends Activity {
      * 相机测试结果返回标识
      */
     public static final int REQUEST_CAMERA_CODE = 9;
+	/**
+	 * 全屏显示纯色判断屏幕是否有坏点返回标识
+	 */
+	public static final int REQUEST_SHOWPICTUREFULL = 10;
     /**
      * 是否输出日志
      */
@@ -110,6 +115,9 @@ public class MainActivity extends Activity {
     private HeadsetLoopbackUtils headsetLoopbackUtils;
     private Gson gson = new Gson();
     private DataModel dataModel;
+    private DataModel mShowPictureFullDataModel;
+	private DataModel mKeyDataModel;
+	private DataModel mRecordDataModel;
     private USBDiskReceiver usbDiskReceiver;
 
     String dir = "cache";
@@ -147,6 +155,11 @@ public class MainActivity extends Activity {
 
         mConnectMessage = new StringBuilder();
         mMainHandler = new MainHandel(this);
+
+//        Message message = new Message();
+//        message.what = MSG_TESTACTIVITY;
+//        mMainHandler.sendMessageDelayed(message, 1000);
+
         mWifiManagerUtils = WifiManagerUtils.getInstance(this);
         batteryChargeUtils = BatteryChargeUtils.getInstance(this);
         getBatteryInfo();
@@ -166,10 +179,10 @@ public class MainActivity extends Activity {
 //                    "\"PWD\":\"celltel-1502" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.56.1\",\"Port\":12345,\"SSID\":\"readboy.20.234-2.4G\"," +
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-//			prepareConnectServer("{\"IP\":\"192.168.0.100\",\"Port\":12345,\"SSID\":\"readboy.20.234-2.4G\"," +
-//					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
-					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
+			prepareConnectServer("{\"IP\":\"192.168.0.100\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
+					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
+//			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
+//					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
                     ",\"PWD\":\"28896800\",\"Station\":1}");
@@ -231,7 +244,17 @@ public class MainActivity extends Activity {
                 outPutLog(R.string.execute_command_error);
                 Log.e(TAG, "return result failed.");
             }
-        }
+        } else if(requestCode == REQUEST_SHOWPICTUREFULL){
+			Log.v("hqb","hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
+        	if(mShowPictureFullDataModel != null) {
+				if (resultCode == RESULT_OK) {
+					mShowPictureFullDataModel.setScreen("ok");
+				} else {
+					mShowPictureFullDataModel.setScreen("cancel");
+				}
+				mConnectManager.sendMessageToServer(gson.toJson(mShowPictureFullDataModel, DataModel.class));
+			}
+		}
     }
 
     /**
@@ -388,7 +411,15 @@ public class MainActivity extends Activity {
                 batteryChargeUtils.getVoltage() + "---" + batteryChargeUtils.isChargingPass());
     }
 
-    /**
+	@Override
+	public void finish() {
+		if (null != headsetLoopbackUtils) {
+			headsetLoopbackUtils.stop();
+		}
+		super.finish();
+	}
+
+	/**
      * On destroy.
      */
     @Override
@@ -405,9 +436,9 @@ public class MainActivity extends Activity {
             if (null != bluetoothUtils) {
                 bluetoothUtils.exit();
             }
-            if (null != headsetLoopbackUtils) {
-                headsetLoopbackUtils.stop();
-            }
+//            if (null != headsetLoopbackUtils) {
+//                headsetLoopbackUtils.stop();
+//            }
             if (null != usbDiskReceiver) {
                 unregisterReceiver(usbDiskReceiver);
             }
@@ -682,17 +713,41 @@ public class MainActivity extends Activity {
 
                 // 录音
                 if (GET.equals(dataModel.getRecord())) {
-                    headsetLoopbackUtils.start();
+                	int time = dataModel.getTimeout() * 1000;
+                	mRecordDataModel = dataModel;
+//                    headsetLoopbackUtils.start();
+					headsetLoopbackUtils.start();
+					postDelayed(() -> {
+						headsetLoopbackUtils.play();
+//						if(mRecordDataModel != null) {
+//							mRecordDataModel.setRecord("ok");
+//							mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
+//						}
+					}, time);
+
+					postDelayed(() -> {
+						if(mRecordDataModel != null) {
+							mRecordDataModel.setRecord("ok");
+							mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
+						}
+					}, 2 * time);
                 }
 
                 // 按键
                 if (GET.equals(dataModel.getKey())) {
+                	mKeyDataModel = dataModel;
                     int time = dataModel.getTimeout() * 1000;
                     isCatchKey = true;
                     postDelayed(() -> {
+                    	Log.v("hqb", "hqb__key__mKeyJsonObject = " + mKeyJsonObject);
                         if (mKeyJsonObject != null) {
                             mainActivity.mConnectManager.sendMessageToServer(mKeyJsonObject.toString());
-                        }
+                        }else {
+                        	if(mKeyDataModel != null){
+                        		mKeyDataModel.setKey(headsetLoopbackUtils.mRecordSuccess ? "ok" : "error");
+								mConnectManager.sendMessageToServer(gson.toJson(mKeyDataModel, DataModel.class));
+							}
+						}
                         mKeyJsonObject = null;
                         isCatchKey = false;
                     }, time);
@@ -714,13 +769,15 @@ public class MainActivity extends Activity {
                 // 屏幕
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
+					mShowPictureFullDataModel = dataModel;
                     int resId = mainActivity.getResources()
                             .getIdentifier(imageName, "drawable",
                                     mainActivity.getPackageName());
                     if (resId > 0) {
                         final Intent intent30 = new Intent(mainActivity,
                                 ShowPictureFullActivity.class).putExtra("res_id", resId);
-                        mainActivity.startActivity(intent30);
+//                        mainActivity.startActivity(intent30);
+						mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
                         mainActivity.outPutLog(mainActivity.getString(R.string.show_file, imageName));
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.show_file, imageName));
                     } else {
@@ -728,7 +785,32 @@ public class MainActivity extends Activity {
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.file_not_exist, imageName));
                     }
                 }
-            } else {
+            } else if(msg.what == MSG_TESTACTIVITY){
+//				mShowPictureFullDataModel = new DataModel();
+//				String imageName = "red";
+//				int resId = mainActivity.getResources()
+//						.getIdentifier(imageName, "drawable",
+//								mainActivity.getPackageName());
+//				if (resId > 0) {
+//					final Intent intent30 = new Intent(mainActivity,
+//							ShowPictureFullActivity.class).putExtra("res_id", resId);
+////                        mainActivity.startActivity(intent30);
+//					mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
+//					mainActivity.outPutLog(mainActivity.getString(R.string.show_file, imageName));
+//					Log.d(mainActivity.TAG, mainActivity.getString(R.string.show_file, imageName));
+//				} else {
+//					mainActivity.outPutLog(mainActivity.getString(R.string.file_not_exist, imageName));
+//					Log.d(mainActivity.TAG, mainActivity.getString(R.string.file_not_exist, imageName));
+//				}
+
+				Message message = new Message();
+				message.what = MSG_TESTACTIVITY;
+				mMainHandler.sendMessageDelayed(message, 8000);
+				headsetLoopbackUtils.start();
+				postDelayed(() -> {
+					headsetLoopbackUtils.play();
+				}, 3000);
+			}else {
                 switch (EnumCommand.values()[msg.what]) {
                     // 连接服务器返回状态
                     case CONNECT:

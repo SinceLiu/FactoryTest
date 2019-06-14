@@ -437,7 +437,7 @@ public class CITTestHelper extends Application {
                         isSet = Integer.parseInt(xrp.getAttributeValue(2)) == 1 ? true : false;
                     } catch (NumberFormatException e1) {
                         Log.e(TAG, "May be the config file has error!");
-                        Log.v("hqb", "hqb__1xrp.getAttributeValue(2) = " + xrp.getAttributeValue(2));
+//                        Log.v("hqb", "hqb__1xrp.getAttributeValue(2) = " + xrp.getAttributeValue(2));
 //                        Toast.makeText(this, "May be the config file has error!", Toast.LENGTH_SHORT).show();
                         e1.printStackTrace();
                     }catch (Exception e){

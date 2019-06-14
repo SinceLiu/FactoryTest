@@ -17,6 +17,7 @@ public class ShowPictureFullActivity extends AppCompatActivity {
   private static final String TAG = "ShowPictureFullActivity";
 
   private ImageView mImageView;
+  private int mResult = RESULT_OK;
 
     /**
      * On create.
@@ -49,8 +50,9 @@ public class ShowPictureFullActivity extends AppCompatActivity {
     if (resId > 0) {
       mImageView.setImageResource(resId);
       // 5s 后自动退出
-      new Handler().postDelayed(() -> finish(),5000);
+      new Handler().postDelayed(() -> finish(),1000);
     } else {
+    	mResult = RESULT_CANCELED;
       finish();
     }
   }
@@ -73,4 +75,10 @@ public class ShowPictureFullActivity extends AppCompatActivity {
     super.onBackPressed();
     finish();
   }
+
+	@Override
+	public void finish() {
+    	setResult(mResult);
+		super.finish();
+	}
 }
