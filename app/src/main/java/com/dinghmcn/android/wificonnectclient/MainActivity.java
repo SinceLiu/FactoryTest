@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
      */
     public boolean isCameraOpen = false;
     private ScrollView mScrollView;
-    private TextView mTextView;
+    private TextView mTextView, mSeq;
     private StringBuilder mConnectMessage;
     private Handler mMainHandler;
     @Nullable
@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         mScrollView = findViewById(R.id.message_scrollview);
         mTextView = findViewById(R.id.connect_message);
+		mSeq = findViewById(R.id.seq);
         usbDiskReceiver = new USBDiskReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("android.intent.action.MEDIA_MOUNTED");
@@ -155,7 +156,6 @@ public class MainActivity extends Activity {
 
         mConnectMessage = new StringBuilder();
         mMainHandler = new MainHandel(this);
-
 //        Message message = new Message();
 //        message.what = MSG_TESTACTIVITY;
 //        mMainHandler.sendMessageDelayed(message, 1000);
@@ -179,10 +179,10 @@ public class MainActivity extends Activity {
 //                    "\"PWD\":\"celltel-1502" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.56.1\",\"Port\":12345,\"SSID\":\"readboy.20.234-2.4G\"," +
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-			prepareConnectServer("{\"IP\":\"192.168.0.100\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
-					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-//			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
-//					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
+//			prepareConnectServer("{\"IP\":\"192.168.0.110\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
+//					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
+			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
+					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
                     ",\"PWD\":\"28896800\",\"Station\":1}");
@@ -286,6 +286,14 @@ public class MainActivity extends Activity {
     private void outPutLog(int idRes) {
         outPutMessage(getString(idRes));
     }
+
+	private void outPutLogSeq(String message) {
+    	if(!TextUtils.isEmpty(message)){
+    		if(mSeq != null){
+    			mSeq.setText(message);
+			}
+		}
+	}
 
     /**
      * 记录按键信息
@@ -576,7 +584,7 @@ public class MainActivity extends Activity {
 				}
                 if (GET.equals(dataModel.getSn()) || GET.equals(dataModel.getDisk())
                         || GET.equals(dataModel.getSd()) || GET.equals(dataModel.getVersion())
-                        || GET.equals(dataModel.getBattery()) || GET.equals(dataModel.getOtg())) {
+                        || GET.equals(dataModel.getBattery())) {
                     // 串号
                     dataModel.setSn(VersionUtils.getSerialNumber());
 
@@ -595,12 +603,26 @@ public class MainActivity extends Activity {
                             "" + (batteryChargeUtils.getVoltage() / 1000.0f) + "V");
 
                     // otg
-                    USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
-                    dataModel.setOtg(USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
-                            + "," + usbDiskUtils.getSDFreeSize());
+//                    USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
+//                    dataModel.setOtg(USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
+//                            + "," + usbDiskUtils.getSDFreeSize());
 
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                 }
+
+                if(GET.equals(dataModel.getOtg())){
+					// otg
+					USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
+//					dataModel.setOtg(USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
+//							+ "," + usbDiskUtils.getSDFreeSize());
+					usbDiskUtils.startTest();
+					int time = dataModel.getTimeout() * 1000;
+					postDelayed(() -> {
+						String result = usbDiskUtils.mIsTestSuccess ? "ok" : "error";
+						dataModel.setOtg(result);
+						mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+					}, time);
+				}
 
                 // 传感器
                 if (GET.equals(dataModel.getAccelerometer()) || GET.equals(dataModel.getLight())
@@ -718,19 +740,12 @@ public class MainActivity extends Activity {
 //                    headsetLoopbackUtils.start();
 					headsetLoopbackUtils.start();
 					postDelayed(() -> {
-						headsetLoopbackUtils.play();
-//						if(mRecordDataModel != null) {
-//							mRecordDataModel.setRecord("ok");
-//							mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
-//						}
-					}, time);
-
-					postDelayed(() -> {
 						if(mRecordDataModel != null) {
-							mRecordDataModel.setRecord("ok");
+							mRecordDataModel.setRecord(headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error");
 							mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
+							headsetLoopbackUtils.stop();
 						}
-					}, 2 * time);
+					}, time);
                 }
 
                 // 按键
@@ -744,7 +759,7 @@ public class MainActivity extends Activity {
                             mainActivity.mConnectManager.sendMessageToServer(mKeyJsonObject.toString());
                         }else {
                         	if(mKeyDataModel != null){
-                        		mKeyDataModel.setKey(headsetLoopbackUtils.mRecordSuccess ? "ok" : "error");
+                        		mKeyDataModel.setKey("ok");
 								mConnectManager.sendMessageToServer(gson.toJson(mKeyDataModel, DataModel.class));
 							}
 						}
@@ -774,8 +789,9 @@ public class MainActivity extends Activity {
                             .getIdentifier(imageName, "drawable",
                                     mainActivity.getPackageName());
                     if (resId > 0) {
+                    	Log.v("hqb", "hqb__ShowPictureFullActivity__dataModel.getTimeout() = " + dataModel.getTimeout() + "__dataModel.getTimeout() * 1000 = " + (dataModel.getTimeout() * 1000));
                         final Intent intent30 = new Intent(mainActivity,
-                                ShowPictureFullActivity.class).putExtra("res_id", resId);
+                                ShowPictureFullActivity.class).putExtra("res_id", resId).putExtra("timeout", dataModel.getTimeout() * 1000);
 //                        mainActivity.startActivity(intent30);
 						mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
                         mainActivity.outPutLog(mainActivity.getString(R.string.show_file, imageName));
@@ -803,13 +819,29 @@ public class MainActivity extends Activity {
 //					Log.d(mainActivity.TAG, mainActivity.getString(R.string.file_not_exist, imageName));
 //				}
 
-				Message message = new Message();
-				message.what = MSG_TESTACTIVITY;
-				mMainHandler.sendMessageDelayed(message, 8000);
-				headsetLoopbackUtils.start();
-				postDelayed(() -> {
-					headsetLoopbackUtils.play();
-				}, 3000);
+//				Message message = new Message();
+//				message.what = MSG_TESTACTIVITY;
+//				mMainHandler.sendMessageDelayed(message, 5000);
+//				headsetLoopbackUtils.start();
+//				postDelayed(() -> {
+//					String result = headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error";
+//					headsetLoopbackUtils.stop();
+//					Log.v("hqb", "hqb__record result = " + result);
+//				}, 3000);
+
+//				USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
+////				String otg = USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
+////						+ "," + usbDiskUtils.getSDFreeSize() + usbDiskUtils.fileInfo();
+//				usbDiskUtils.startTest();
+//				postDelayed(() -> {
+//					usbDiskUtils.stopTest();
+//					String result = usbDiskUtils.mIsTestSuccess ? "ok" : "error";
+//					Log.v("hqb", "hqb__usb result = " + result);
+//					outPutLog("usb test " + result);
+//				}, 3000);
+//				Message message = new Message();
+//				message.what = MSG_TESTACTIVITY;
+//				mMainHandler.sendMessageDelayed(message, 4000);
 			}else {
                 switch (EnumCommand.values()[msg.what]) {
                     // 连接服务器返回状态
@@ -844,6 +876,9 @@ public class MainActivity extends Activity {
                             default:
                         }
                         break;
+					case SEQ:
+						mainActivity.outPutLogSeq(msg.obj.toString());
+						break;
                     default:
                         mainActivity.outPutLog(Integer.toString(msg.what));
                 }

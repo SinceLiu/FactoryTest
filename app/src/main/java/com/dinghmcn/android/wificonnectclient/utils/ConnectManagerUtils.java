@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -58,6 +59,8 @@ public class ConnectManagerUtils {
      * 命令错误
      */
     public static final int COMMAND_ERROR = 4;
+
+	public static final int COMMAND_SEQ = 1000;
     private static final String TAG = ConnectManagerUtils.class.getSimpleName();
     /**
      * 是否连接
@@ -135,9 +138,9 @@ public class ConnectManagerUtils {
             while (mConnected && !mSocket.isClosed() && mSocket.isConnected()
                     && !mSocket.isInputShutdown()) {
                 Log.d(TAG, "Start receive message.");
+				String command = null;
                 try {
                     is = mSocket.getInputStream();
-                    String command;
                     byte[] tempBuffer = new byte[2048];
                     int numReadedBytes = is.read(tempBuffer, 0, tempBuffer.length);
                     if (numReadedBytes > 0) {
@@ -152,16 +155,29 @@ public class ConnectManagerUtils {
                             continue;
                         }
                     }
-                    Log.d(TAG, "Command:" + command);
+                    Log.d(TAG, "hqb Command:" + command);
                     // 处理接收到的消息
                     if (!command.isEmpty()) {
-                        parsingCommand(command);
-                        sendMessage(EnumCommand.COMMAND.ordinal(), COMMAND_SEND, command);
+						if(command.contains("Seq=")){
+							sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
+						}else {
+							parsingCommand(command);
+							sendMessage(EnumCommand.COMMAND.ordinal(), COMMAND_SEND, command);
+						}
                     } else {
                         sendMessage(EnumCommand.COMMAND.ordinal(), COMMAND_ERROR);
                     }
-                } catch (IOException e) {
-                    Log.d(TAG, "Receive message error.");
+                } catch (Exception e) {
+                    Log.d(TAG, "hqb Receive message error.");
+                    try {
+						if(!TextUtils.isEmpty(command)){
+							if(command.contains("Seq=")){
+								sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
+							}
+						}
+					}catch (Exception e1){
+                    	e1.printStackTrace();
+					}
                     e.printStackTrace();
                 }
             }
@@ -449,6 +465,8 @@ public class ConnectManagerUtils {
         /**
          * 命令信息
          */
-        COMMAND
+        COMMAND,
+
+		SEQ
     }
 }

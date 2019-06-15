@@ -101,7 +101,7 @@ public class DiskManager {
             ArrayList<VolumeInfo> list = new ArrayList<VolumeInfo>();
             for (int i = 0; i < volumeList.size(); i++) {
                 list.add(volumeList.get(i));
-                System.out.println("volumeList.get(i)__path is" + volumeList.get(i).getPath().getAbsolutePath());
+//                System.out.println("volumeList.get(i)__path is" + volumeList.get(i).getPath().getAbsolutePath());
             }
             for (VolumeInfo vol : list) {
                 if (vol.getType() == VolumeInfo.TYPE_PUBLIC) {

@@ -2,9 +2,13 @@ package com.dinghmcn.android.wificonnectclient.utils;
 
 import android.content.Context;
 import android.os.StatFs;
+import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 /**
@@ -120,4 +124,141 @@ public class USBDiskUtils {
         return (allBlocks * blockSize) / 1024 / 1024; //单位MB
 
     }
+
+    public String fileInfo(){
+		String path = DiskManager.getUsbStoragePath(mContext);
+		if(path == null) {
+			return "path is " + path;
+		}else {
+			return "path is " + path + "   file exists is " + new File(path).exists();
+		}
+	}
+
+	Thread mUsbTestThread;
+    boolean mIsRun = false;
+	private File mfile = null;
+	public boolean mIsTestSuccess = false;
+	private String strFromFile = "";
+
+	public void stopTest(){
+		mIsRun = false;
+	}
+
+	public void startTest(){
+    	if(mUsbTestThread != null && mUsbTestThread.isAlive()){
+    		return;
+		}
+		mIsRun = true;
+		mIsTestSuccess = false;
+		mUsbTestThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (mIsRun) {
+					String tmpPath = DiskManager.getUsbStoragePath(mContext);
+					if(tmpPath != null) {
+						mIsRun = false;
+						mIsTestSuccess = true;
+//						ArrayList<String> allPathList = new ArrayList<>();
+//						allPathList.add(tmpPath);
+//						String pathString;
+//						int size = allPathList.size();
+//						for (int i = 0; i < size; i++) {
+//							pathString = allPathList.get(i);
+//							pathString = pathString + "/test.txt";
+//							mfile = new File(pathString);
+//							if (mfile.exists()) {
+//								try {
+//									mfile.delete();
+//								} catch (Exception e) {
+//
+//									e.printStackTrace();
+//								}
+//								addFile();
+//								if (!doTest(i == (size - 1))) {
+//									break;
+//								}
+//							} else {
+//								addFile();
+//								if (!doTest(i == (size - 1))) {
+//									break;
+//								}
+//							}
+//						}
+					}
+				}
+			}
+		});
+		mUsbTestThread.start();
+	}
+
+	public void addFile() {
+		try {
+			Log.v("hqb", "hqb__addFile path = " + mfile.getAbsolutePath());
+			mfile.createNewFile();
+			writeFIle();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void writeFIle() {
+		FileWriter fw;
+		BufferedWriter bw;
+		try {
+			fw = new FileWriter(mfile);
+			Log.v("hqb", "hqb__writeFIle path = " + mfile.getAbsolutePath());
+			bw = new BufferedWriter(fw);
+			bw.write("Udisk test successfully.");
+			bw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public boolean doTest(boolean end) {
+		strFromFile = openFile(mfile);
+		Log.v("hqb", "hqb strFromFile: " + strFromFile);
+		if (!"".equals(strFromFile)) {
+			if (end) {
+				mIsRun = false;
+				mIsTestSuccess = true;
+//				Intent data = new Intent();
+//				data.putExtra("readfile", strFromFile);
+//				setResult(RESULT_OK, data);
+//				Log.v(TAG, " onDestroy : " + strFromFile);
+//				finish();
+			}
+		} else {
+			Log.v("hqb", "hqb strFromFile: is null");
+			strFromFile = "read or write fail,please delete the test.txt in udisk and test again";
+			mIsTestSuccess = false;
+//			Intent data = new Intent();
+//			data.putExtra("readfile", strFromFile);
+//			setResult(RESULT_CANCELED, data);
+//			Log.v(TAG, " onDestroy : " + strFromFile);
+//			finish();
+			return false;
+		}
+		return true;
+	}
+
+	public String openFile(File file) {
+		FileReader fr;
+		BufferedReader br;
+		String str = "";
+		try {
+			fr = new FileReader(file);
+			br = new BufferedReader(fr);
+			int line = 1;
+			if (br.ready()) {
+				str = br.readLine();
+				// line ++;
+			}
+			br.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return str;
+	}
 }

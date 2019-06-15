@@ -3,6 +3,7 @@ package com.dinghmcn.android.wificonnectclient;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -18,6 +19,7 @@ public class ShowPictureFullActivity extends AppCompatActivity {
 
   private ImageView mImageView;
   private int mResult = RESULT_OK;
+  int mTimeOut = 3 * 1000;
 
     /**
      * On create.
@@ -37,6 +39,8 @@ public class ShowPictureFullActivity extends AppCompatActivity {
     setContentView(R.layout.activity_full_show_picture);
 
     mImageView = findViewById(R.id.imageView);
+    mTimeOut = getIntent().getIntExtra("timeout", mTimeOut);
+    Log.v("hqb", "hqb__ShowPictureFullActivity__mTimeOut = " + mTimeOut);
   }
 
     /**
@@ -50,7 +54,7 @@ public class ShowPictureFullActivity extends AppCompatActivity {
     if (resId > 0) {
       mImageView.setImageResource(resId);
       // 5s 后自动退出
-      new Handler().postDelayed(() -> finish(),1000);
+      new Handler().postDelayed(() -> finish(), mTimeOut);
     } else {
     	mResult = RESULT_CANCELED;
       finish();
