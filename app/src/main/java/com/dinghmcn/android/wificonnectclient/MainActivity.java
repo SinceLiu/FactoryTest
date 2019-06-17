@@ -238,10 +238,12 @@ public class MainActivity extends Activity {
                     File file = new File(pictureUri.getPath());
                     dataModel.setCamera("ok");
                     mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
+					mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     outPutLog(getString(R.string.send_file, pictureUri.toString()));
                 }
             } else {
                 outPutLog(R.string.execute_command_error);
+				mConnectManager.sendMessageToServerNotJson("execute command error");
                 Log.e(TAG, "return result failed.");
             }
         } else if(requestCode == REQUEST_SHOWPICTUREFULL){
@@ -771,6 +773,8 @@ public class MainActivity extends Activity {
                 // 触摸
                 if (GET.equals(dataModel.getTouch())) {
                     isCatchTouch = true;
+                    dataModel.setTouch("ok");
+					mainActivity.mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     int time = dataModel.getTimeout() * 1000;
                     postDelayed(() -> {
                         if (mTouchJsonArray != null) {

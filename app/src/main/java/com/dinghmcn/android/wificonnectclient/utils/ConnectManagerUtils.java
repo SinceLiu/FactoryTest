@@ -304,9 +304,9 @@ public class ConnectManagerUtils {
                 }
                 out.flush();
 
-                if (null != message) {
-                    sendMessageToServer(message);
-                }
+//                if (null != message) {
+//                    sendMessageToServer(message);
+//                }
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
