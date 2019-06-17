@@ -563,7 +563,7 @@ public class MainActivity extends Activity {
 //					saveDatabjectToPath(path, (String) msg.obj);
 					saveDatabjectToPath(path, data);
                 	dataModel = null;
-					mConnectManager.sendErrorMessageToServer("error");
+					mConnectManager.sendMessageToServerNotJson("error");
 					return;
 				}
 //                dataModel = gson.fromJson((String) msg.obj, DataModel.class);
@@ -878,6 +878,7 @@ public class MainActivity extends Activity {
                         break;
 					case SEQ:
 						mainActivity.outPutLogSeq(msg.obj.toString());
+						mConnectManager.sendMessageToServerNotJson("seq=ok");
 						break;
                     default:
                         mainActivity.outPutLog(Integer.toString(msg.what));

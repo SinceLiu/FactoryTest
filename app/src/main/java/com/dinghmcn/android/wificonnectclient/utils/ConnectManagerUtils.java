@@ -4,7 +4,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -169,15 +168,15 @@ public class ConnectManagerUtils {
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "hqb Receive message error.");
-                    try {
-						if(!TextUtils.isEmpty(command)){
-							if(command.contains("Seq=")){
-								sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
-							}
-						}
-					}catch (Exception e1){
-                    	e1.printStackTrace();
-					}
+//                    try {
+//						if(!TextUtils.isEmpty(command)){
+//							if(command.contains("Seq=")){
+//								sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
+//							}
+//						}
+//					}catch (Exception e1){
+//                    	e1.printStackTrace();
+//					}
                     e.printStackTrace();
                 }
             }
@@ -395,7 +394,7 @@ public class ConnectManagerUtils {
 	 *
 	 * @param message the message
 	 */
-	public void sendErrorMessageToServer(final String message) {
+	public void sendMessageToServerNotJson(final String message) {
 		Log.d(TAG, "Send error message :" + message);
 		assert mThreadPool != null;
 		mThreadPool.execute(() -> {
