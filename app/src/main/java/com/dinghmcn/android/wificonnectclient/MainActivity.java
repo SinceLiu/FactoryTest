@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.net.Uri;
 import android.net.wifi.ScanResult;
@@ -51,6 +53,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -65,7 +68,7 @@ import java.util.Set;
  * @date 2018 /4/20 10:47
  */
 public class MainActivity extends Activity {
-	final int MSG_TESTACTIVITY = 0x1000;
+    final int MSG_TESTACTIVITY = 0x1000;
     /**
      * 命令标识
      */
@@ -74,10 +77,10 @@ public class MainActivity extends Activity {
      * 相机测试结果返回标识
      */
     public static final int REQUEST_CAMERA_CODE = 9;
-	/**
-	 * 全屏显示纯色判断屏幕是否有坏点返回标识
-	 */
-	public static final int REQUEST_SHOWPICTUREFULL = 10;
+    /**
+     * 全屏显示纯色判断屏幕是否有坏点返回标识
+     */
+    public static final int REQUEST_SHOWPICTUREFULL = 10;
     /**
      * 是否输出日志
      */
@@ -116,11 +119,14 @@ public class MainActivity extends Activity {
     private Gson gson = new Gson();
     private DataModel dataModel;
     private DataModel mShowPictureFullDataModel;
-	private DataModel mKeyDataModel;
-	private DataModel mRecordDataModel;
+    private DataModel mKeyDataModel;
+    private DataModel mRecordDataModel;
     private USBDiskReceiver usbDiskReceiver;
 
     String dir = "cache";
+    private String mPictureName = "picture.jpg";
+    private Camera mCamera;
+
 
     /**
      * On create.
@@ -137,7 +143,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         mScrollView = findViewById(R.id.message_scrollview);
         mTextView = findViewById(R.id.connect_message);
-		mSeq = findViewById(R.id.seq);
+        mSeq = findViewById(R.id.seq);
         usbDiskReceiver = new USBDiskReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("android.intent.action.MEDIA_MOUNTED");
@@ -145,21 +151,20 @@ public class MainActivity extends Activity {
         filter.addAction("android.intent.action.MEDIA_REMOVED");
         registerReceiver(usbDiskReceiver, filter);
         testNext();
-		dir = System.currentTimeMillis() + "";
+        dir = System.currentTimeMillis() + "";
     }
 
     /**
      * 准备工作，初始化测试项、打开Wifi并连接服务
      */
     private void testNext() {
-		initPermission();
+        initPermission();
 
         mConnectMessage = new StringBuilder();
         mMainHandler = new MainHandel(this);
 //        Message message = new Message();
 //        message.what = MSG_TESTACTIVITY;
 //        mMainHandler.sendMessageDelayed(message, 1000);
-
         mWifiManagerUtils = WifiManagerUtils.getInstance(this);
         batteryChargeUtils = BatteryChargeUtils.getInstance(this);
         getBatteryInfo();
@@ -167,8 +172,7 @@ public class MainActivity extends Activity {
         bluetoothUtils.bluetoothOpen();
         headsetLoopbackUtils = HeadsetLoopbackUtils.getInstance(this);
 //        outPutMessage("headsetLoopbackUtils.start()");
-		outPutMessage(getVersionName(this));
-        versionUtils = VersionUtils.getInstance(this);
+        outPutMessage(getVersionName(this));
         versionUtils = VersionUtils.getInstance(this);
         storageUtils = StorageUtils.getInstance(this);
         assert mWifiManagerUtils != null;
@@ -181,12 +185,13 @@ public class MainActivity extends Activity {
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.0.110\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
-					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
+            prepareConnectServer("{\"IP\":\"192.168.99.117\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
+                    "\"PWD\":\"1234567890" + "\",\"Station\":1}");
+//			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
+//					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
                     ",\"PWD\":\"28896800\",\"Station\":1}");
-
         }
 
     }
@@ -206,10 +211,10 @@ public class MainActivity extends Activity {
             //申请权限
             ActivityCompat.requestPermissions(this, permissions, 100);
             try {
-				Thread.sleep(300);
-			}catch (Exception e){
-            	e.printStackTrace();
-			}
+                Thread.sleep(300);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -224,8 +229,8 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.d(TAG, "result:" + requestCode + "/" + resultCode);
-		Log.v("hqb", "hqb__MainActivity__onActivityResult__requestCode == REQUEST_CAMERA_CODE = " + (requestCode == REQUEST_CAMERA_CODE)
-			+ "__resultCode == RESULT_OK = " + (resultCode == RESULT_OK) + "__data = " + data);
+        Log.v("hqb", "hqb__MainActivity__onActivityResult__requestCode == REQUEST_CAMERA_CODE = " + (requestCode == REQUEST_CAMERA_CODE)
+                + "__resultCode == RESULT_OK = " + (resultCode == RESULT_OK) + "__data = " + data);
         if (requestCode == REQUEST_CAMERA_CODE) {
             isCameraOpen = false;
             Log.w(TAG, "onActivityResult: " + "11 " + (null == data));
@@ -238,25 +243,25 @@ public class MainActivity extends Activity {
                     File file = new File(pictureUri.getPath());
                     dataModel.setCamera("ok");
                     mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
-					mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     outPutLog(getString(R.string.send_file, pictureUri.toString()));
                 }
             } else {
                 outPutLog(R.string.execute_command_error);
-				mConnectManager.sendMessageToServerNotJson("execute command error");
+                mConnectManager.sendMessageToServerNotJson("execute command error");
                 Log.e(TAG, "return result failed.");
             }
-        } else if(requestCode == REQUEST_SHOWPICTUREFULL){
-			Log.v("hqb","hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
-        	if(mShowPictureFullDataModel != null) {
-				if (resultCode == RESULT_OK) {
-					mShowPictureFullDataModel.setScreen("ok");
-				} else {
-					mShowPictureFullDataModel.setScreen("cancel");
-				}
-				mConnectManager.sendMessageToServer(gson.toJson(mShowPictureFullDataModel, DataModel.class));
-			}
-		}
+        } else if (requestCode == REQUEST_SHOWPICTUREFULL) {
+            Log.v("hqb", "hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
+            if (mShowPictureFullDataModel != null) {
+                if (resultCode == RESULT_OK) {
+                    mShowPictureFullDataModel.setScreen("ok");
+                } else {
+                    mShowPictureFullDataModel.setScreen("cancel");
+                }
+                mConnectManager.sendMessageToServer(gson.toJson(mShowPictureFullDataModel, DataModel.class));
+            }
+        }
     }
 
     /**
@@ -289,13 +294,13 @@ public class MainActivity extends Activity {
         outPutMessage(getString(idRes));
     }
 
-	private void outPutLogSeq(String message) {
-    	if(!TextUtils.isEmpty(message)){
-    		if(mSeq != null){
-    			mSeq.setText(message);
-			}
-		}
-	}
+    private void outPutLogSeq(String message) {
+        if (!TextUtils.isEmpty(message)) {
+            if (mSeq != null) {
+                mSeq.setText(message);
+            }
+        }
+    }
 
     /**
      * 记录按键信息
@@ -358,8 +363,8 @@ public class MainActivity extends Activity {
                         assert mTouchJsonObject != null;
                         mTouchJsonObject.put("MOVE", mTouchMoveJsonObject);
                         mTouchJsonObject.put("UP", "(" + ev.getRawX() + "," + ev.getRawY() + ")");
-						mTouchJsonArray.put(mTouchJsonObject);
-						Log.d(TAG, mTouchJsonObject.toString() + " | " + mTouchJsonArray.toString());
+                        mTouchJsonArray.put(mTouchJsonObject);
+                        Log.d(TAG, mTouchJsonObject.toString() + " | " + mTouchJsonArray.toString());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -421,15 +426,15 @@ public class MainActivity extends Activity {
                 batteryChargeUtils.getVoltage() + "---" + batteryChargeUtils.isChargingPass());
     }
 
-	@Override
-	public void finish() {
-		if (null != headsetLoopbackUtils) {
-			headsetLoopbackUtils.stop();
-		}
-		super.finish();
-	}
+    @Override
+    public void finish() {
+        if (null != headsetLoopbackUtils) {
+            headsetLoopbackUtils.stop();
+        }
+        super.finish();
+    }
 
-	/**
+    /**
      * On destroy.
      */
     @Override
@@ -451,6 +456,10 @@ public class MainActivity extends Activity {
 //            }
             if (null != usbDiskReceiver) {
                 unregisterReceiver(usbDiskReceiver);
+            }
+            if (mCamera != null) {
+                mCamera.release();
+                mCamera = null;
             }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -527,6 +536,7 @@ public class MainActivity extends Activity {
         }
 
         private String mLastPartInfo = "";
+
         /**
          * Handle message.
          *
@@ -541,33 +551,33 @@ public class MainActivity extends Activity {
 
             if (msg.what == CMD_CODE) {
                 Gson gson = new Gson();
-                String data = (String)msg.obj;
-                String saveData = (String)msg.obj;
+                String data = (String) msg.obj;
+                String saveData = (String) msg.obj;
                 String tmpData = data.trim();
-                if(!tmpData.startsWith("{") && !TextUtils.isEmpty(mLastPartInfo)){
-                	data = mLastPartInfo + data;
-                	mLastPartInfo = "";
-				}
-                if(!TextUtils.isEmpty(data)) {
-					int index = data.indexOf("}");
-					if(index >= 0) data = data.substring(0, index + 1);
-					if(index < data.length() - 1){
-						mLastPartInfo = data.substring(index + 1);
-					}
-				}
+                if (!tmpData.startsWith("{") && !TextUtils.isEmpty(mLastPartInfo)) {
+                    data = mLastPartInfo + data;
+                    mLastPartInfo = "";
+                }
+                if (!TextUtils.isEmpty(data)) {
+                    int index = data.indexOf("}");
+                    if (index >= 0) data = data.substring(0, index + 1);
+                    if (index < data.length() - 1) {
+                        mLastPartInfo = data.substring(index + 1);
+                    }
+                }
                 try {
 //					dataModel = gson.fromJson((String) msg.obj, DataModel.class);
-					saveDatabjectToPath(getExternalCacheDir() + "/" + dir + "/" + System.currentTimeMillis() + ".txt", saveData);
-					dataModel = gson.fromJson(data, DataModel.class);
-				}catch (Exception e){
-                	e.printStackTrace();
-					String path = getExternalCacheDir() + "/" + System.currentTimeMillis() + ".txt";
+                    saveDatabjectToPath(getExternalCacheDir() + "/" + dir + "/" + System.currentTimeMillis() + ".txt", saveData);
+                    dataModel = gson.fromJson(data, DataModel.class);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    String path = getExternalCacheDir() + "/" + System.currentTimeMillis() + ".txt";
 //					saveDatabjectToPath(path, (String) msg.obj);
-					saveDatabjectToPath(path, data);
-                	dataModel = null;
-					mConnectManager.sendMessageToServerNotJson("error");
-					return;
-				}
+                    saveDatabjectToPath(path, data);
+                    dataModel = null;
+                    mConnectManager.sendMessageToServerNotJson("error");
+                    return;
+                }
 //                dataModel = gson.fromJson((String) msg.obj, DataModel.class);
 
                 // 关机
@@ -581,9 +591,9 @@ public class MainActivity extends Activity {
                     outPutMessage(message);
                 }
 
-				if(dataModel != null){
-                	dataModel.setSn(VersionUtils.getSerialNumber());
-				}
+                if (dataModel != null) {
+                    dataModel.setSn(VersionUtils.getSerialNumber());
+                }
                 if (GET.equals(dataModel.getSn()) || GET.equals(dataModel.getDisk())
                         || GET.equals(dataModel.getSd()) || GET.equals(dataModel.getVersion())
                         || GET.equals(dataModel.getBattery())) {
@@ -612,19 +622,19 @@ public class MainActivity extends Activity {
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                 }
 
-                if(GET.equals(dataModel.getOtg())){
-					// otg
-					USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
+                if (GET.equals(dataModel.getOtg())) {
+                    // otg
+                    USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
 //					dataModel.setOtg(USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
 //							+ "," + usbDiskUtils.getSDFreeSize());
-					usbDiskUtils.startTest();
-					int time = dataModel.getTimeout() * 1000;
-					postDelayed(() -> {
-						String result = usbDiskUtils.mIsTestSuccess ? "ok" : "error";
-						dataModel.setOtg(result);
-						mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-					}, time);
-				}
+                    usbDiskUtils.startTest();
+                    int time = dataModel.getTimeout() * 1000;
+                    postDelayed(() -> {
+                        String result = usbDiskUtils.mIsTestSuccess ? "ok" : "error";
+                        dataModel.setOtg(result);
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    }, time);
+                }
 
                 // 传感器
                 if (GET.equals(dataModel.getAccelerometer()) || GET.equals(dataModel.getLight())
@@ -662,27 +672,72 @@ public class MainActivity extends Activity {
                 // 相机
                 String cameraInfo = dataModel.getCamera();
                 if (null != cameraInfo && cameraInfo.contains("-")) {
-                    Intent intent20 = new Intent(MainActivity.this, CameraActivity.class)
-                            .putExtra("CameraInfo", cameraInfo);
+                    // 保存照片名称
+                    mPictureName = cameraInfo + ".jpg";
+                    String[] info = cameraInfo.split("-");
+                    // 前摄或后摄
+                    int cameraId = Integer.parseInt(info[1]);
+                    Log.d(TAG, "cameraId : " + cameraId);
                     if (isCameraOpen) {
-                        postDelayed(() -> startActivityForResult(intent20, REQUEST_CAMERA_CODE), 5000);
+                        postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    isCameraOpen = true;
+                                    if (mCamera != null) {
+                                        mCamera.release();
+                                        mCamera = null;
+                                    }
+                                    mCamera = Camera.open(cameraId);
+                                    //设置照片尺寸,需硬件支持该尺寸
+                                    Camera.Parameters mParameters = mCamera.getParameters();
+                                    mParameters.setPictureSize(1920, 1080);
+                                    mCamera.setParameters(mParameters);
+                                    mCamera.setPreviewTexture(new SurfaceTexture(10));
+                                    mCamera.startPreview();
+                                    takePictures();
+                                } catch (Exception e) {
+                                    Log.e(TAG, "take pictures error :" + e.toString());
+                                    isCameraOpen = false;
+                                }
+                            }
+                        }, 3000);
                     } else {
-                        isCameraOpen = true;
-                        startActivityForResult(intent20, REQUEST_CAMERA_CODE);
+                        try {
+                            isCameraOpen = true;
+                            if (mCamera != null) {
+                                mCamera.release();
+                                mCamera = null;
+                            }
+                            mCamera = Camera.open(cameraId);
+                            //设置照片尺寸
+                            Camera.Parameters mParameters = mCamera.getParameters();
+                            mParameters.setPictureSize(1920, 1080);
+                            mCamera.setParameters(mParameters);
+                            mCamera.setPreviewTexture(new SurfaceTexture(10));
+                            mCamera.startPreview();
+                            takePictures();
+                        } catch (Exception e) {
+                            Log.e(TAG, "take pictures error :" + e.toString());
+                            isCameraOpen = false;
+                        }
                     }
                 }
 
                 // 蓝牙
                 if (GET.equals(dataModel.getBluetooth())) {
                     bluetoothUtils = BluetoothUtils.getInstance(MainActivity.this);
-                    postDelayed(() -> {
-                        JSONArray jsonArray = new JSONArray();
-                        Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
-                        for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
-                            jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+                    postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            JSONArray jsonArray = new JSONArray();
+                            Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
+                            for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+                                jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+                            }
+                            dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
+                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                         }
-                        dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     }, 100);
                 }
 
@@ -713,11 +768,11 @@ public class MainActivity extends Activity {
                         // for ActivityCompat#requestPermissions for more details.
                         return;
                     } else {
-                    	try {
-							startActivity(intent1);
-						}catch (Exception e){
-                    		e.printStackTrace();
-						}
+                        try {
+                            startActivity(intent1);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
 
                     }
                 }
@@ -737,34 +792,34 @@ public class MainActivity extends Activity {
 
                 // 录音
                 if (GET.equals(dataModel.getRecord())) {
-                	int time = dataModel.getTimeout() * 1000;
-                	mRecordDataModel = dataModel;
+                    int time = dataModel.getTimeout() * 1000;
+                    mRecordDataModel = dataModel;
 //                    headsetLoopbackUtils.start();
-					headsetLoopbackUtils.start();
-					postDelayed(() -> {
-						if(mRecordDataModel != null) {
-							mRecordDataModel.setRecord(headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error");
-							mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
-							headsetLoopbackUtils.stop();
-						}
-					}, time);
+                    headsetLoopbackUtils.start();
+                    postDelayed(() -> {
+                        if (mRecordDataModel != null) {
+                            mRecordDataModel.setRecord(headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error");
+                            mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
+                            headsetLoopbackUtils.stop();
+                        }
+                    }, time);
                 }
 
                 // 按键
                 if (GET.equals(dataModel.getKey())) {
-                	mKeyDataModel = dataModel;
+                    mKeyDataModel = dataModel;
                     int time = dataModel.getTimeout() * 1000;
                     isCatchKey = true;
                     postDelayed(() -> {
-                    	Log.v("hqb", "hqb__key__mKeyJsonObject = " + mKeyJsonObject);
+                        Log.v("hqb", "hqb__key__mKeyJsonObject = " + mKeyJsonObject);
                         if (mKeyJsonObject != null) {
                             mainActivity.mConnectManager.sendMessageToServer(mKeyJsonObject.toString());
-                        }else {
-                        	if(mKeyDataModel != null){
-                        		mKeyDataModel.setKey("ok");
-								mConnectManager.sendMessageToServer(gson.toJson(mKeyDataModel, DataModel.class));
-							}
-						}
+                        } else {
+                            if (mKeyDataModel != null) {
+                                mKeyDataModel.setKey("ok");
+                                mConnectManager.sendMessageToServer(gson.toJson(mKeyDataModel, DataModel.class));
+                            }
+                        }
                         mKeyJsonObject = null;
                         isCatchKey = false;
                     }, time);
@@ -774,7 +829,7 @@ public class MainActivity extends Activity {
                 if (GET.equals(dataModel.getTouch())) {
                     isCatchTouch = true;
                     dataModel.setTouch("ok");
-					mainActivity.mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    mainActivity.mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     int time = dataModel.getTimeout() * 1000;
                     postDelayed(() -> {
                         if (mTouchJsonArray != null) {
@@ -788,16 +843,16 @@ public class MainActivity extends Activity {
                 // 屏幕
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
-					mShowPictureFullDataModel = dataModel;
+                    mShowPictureFullDataModel = dataModel;
                     int resId = mainActivity.getResources()
                             .getIdentifier(imageName, "drawable",
                                     mainActivity.getPackageName());
                     if (resId > 0) {
-                    	Log.v("hqb", "hqb__ShowPictureFullActivity__dataModel.getTimeout() = " + dataModel.getTimeout() + "__dataModel.getTimeout() * 1000 = " + (dataModel.getTimeout() * 1000));
+                        Log.v("hqb", "hqb__ShowPictureFullActivity__dataModel.getTimeout() = " + dataModel.getTimeout() + "__dataModel.getTimeout() * 1000 = " + (dataModel.getTimeout() * 1000));
                         final Intent intent30 = new Intent(mainActivity,
                                 ShowPictureFullActivity.class).putExtra("res_id", resId).putExtra("timeout", dataModel.getTimeout() * 1000);
 //                        mainActivity.startActivity(intent30);
-						mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
+                        mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
                         mainActivity.outPutLog(mainActivity.getString(R.string.show_file, imageName));
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.show_file, imageName));
                     } else {
@@ -805,7 +860,7 @@ public class MainActivity extends Activity {
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.file_not_exist, imageName));
                     }
                 }
-            } else if(msg.what == MSG_TESTACTIVITY){
+            } else if (msg.what == MSG_TESTACTIVITY) {
 //				mShowPictureFullDataModel = new DataModel();
 //				String imageName = "red";
 //				int resId = mainActivity.getResources()
@@ -846,7 +901,7 @@ public class MainActivity extends Activity {
 //				Message message = new Message();
 //				message.what = MSG_TESTACTIVITY;
 //				mMainHandler.sendMessageDelayed(message, 4000);
-			}else {
+            } else {
                 switch (EnumCommand.values()[msg.what]) {
                     // 连接服务器返回状态
                     case CONNECT:
@@ -880,10 +935,10 @@ public class MainActivity extends Activity {
                             default:
                         }
                         break;
-					case SEQ:
-						mainActivity.outPutLogSeq(msg.obj.toString());
-						mConnectManager.sendMessageToServerNotJson("seq=ok");
-						break;
+                    case SEQ:
+                        mainActivity.outPutLogSeq(msg.obj.toString());
+                        mConnectManager.sendMessageToServerNotJson("seq=ok");
+                        break;
                     default:
                         mainActivity.outPutLog(Integer.toString(msg.what));
                 }
@@ -892,76 +947,125 @@ public class MainActivity extends Activity {
     }
 
 
-	public static final String NOMEDIA = ".nomedia";
+    public static final String NOMEDIA = ".nomedia";
 
-	/**
-	 * 创建文件夹（带nomedia）
-	 * @param dirPath
-	 */
-	public static void mkdirs(String dirPath){
-		try{
-			File file = new File(dirPath);
-			if(!file.exists()){
-				file.mkdirs();
-			}
-			String filePath = dirPath.endsWith(File.separator) ? (dirPath +  NOMEDIA) : (dirPath + File.separator + NOMEDIA);
-			File f = new File(filePath);
-			if(!f.exists()){
-				try {
-					f.createNewFile();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
+    /**
+     * 创建文件夹（带nomedia）
+     *
+     * @param dirPath
+     */
+    public static void mkdirs(String dirPath) {
+        try {
+            File file = new File(dirPath);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+            String filePath = dirPath.endsWith(File.separator) ? (dirPath + NOMEDIA) : (dirPath + File.separator + NOMEDIA);
+            File f = new File(filePath);
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-	/**
-	 * 将字符串保存到文件
-	 * @param path
-	 */
-	public static boolean saveDatabjectToPath(String path, String data) {
-		Log.v("hqb", "hqb__path = " + path);
+    /**
+     * 将字符串保存到文件
+     *
+     * @param path
+     */
+    public static boolean saveDatabjectToPath(String path, String data) {
+        Log.v("hqb", "hqb__path = " + path);
 //		outPutMessage(data);
-		if (TextUtils.isEmpty(path) || data == null) {
-			return false;
-		}
-		File fp = new File(path);
-		if (!fp.getParentFile().exists()) {
-			fp.getParentFile().mkdirs();
-		}
-		mkdirs(fp.getParent());
-		try {
-			FileOutputStream out = new FileOutputStream(path);
-			// 将json数据加密之后存入缓存
-			byte[] source = null;
-			source = data.getBytes("utf-8");
-			if (source != null) {
-				out.write(source, 0, source.length);
-			}
-			out.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
+        if (TextUtils.isEmpty(path) || data == null) {
+            return false;
+        }
+        File fp = new File(path);
+        if (!fp.getParentFile().exists()) {
+            fp.getParentFile().mkdirs();
+        }
+        mkdirs(fp.getParent());
+        try {
+            FileOutputStream out = new FileOutputStream(path);
+            // 将json数据加密之后存入缓存
+            byte[] source = null;
+            source = data.getBytes("utf-8");
+            if (source != null) {
+                out.write(source, 0, source.length);
+            }
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	public static String getVersionName(Context context)
-	{
-		String versionName = "";
-		try {
-			String pkName = context.getPackageName();
-			versionName = "版本：" + context.getPackageManager().getPackageInfo(
-					pkName, 0).versionName;
+    public static String getVersionName(Context context) {
+        String versionName = "";
+        try {
+            String pkName = context.getPackageName();
+            versionName = "版本：" + context.getPackageManager().getPackageInfo(
+                    pkName, 0).versionName;
 // 			int versionCode = this.getPackageManager()
 // 					.getPackageInfo(pkName, 0).versionCode;
 // 			return pkName + "   " + versionName + "  " + versionCode;
-		} catch (Exception e) {
-		}
-		return versionName;
-	}
+        } catch (Exception e) {
+        }
+        return versionName;
+    }
+
+
+    /**
+     * 拍照、保存图片、上传信息
+     */
+    private void takePictures() {
+        mCamera.takePicture(null, null, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+                if (data != null) {
+                    File file = createFile(data);
+                    if (file != null && ConnectManagerUtils.mConnected) {
+                        assert mConnectManager != null;
+                        dataModel.setCamera("ok");
+                        mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                        outPutLog(getString(R.string.send_file, Uri.fromFile(file).toString()));
+                        isCameraOpen = false;
+                    }
+                } else {
+                    outPutLog(R.string.execute_command_error);
+                    mConnectManager.sendMessageToServerNotJson("take the picture error");
+                    isCameraOpen = false;
+                }
+            }
+        });
+    }
+
+    /**
+     * 保存照片文件
+     *
+     * @param data the data
+     */
+    private File createFile(@NonNull byte[] data) {
+        assert mCamera != null;
+        File file = new File(getExternalCacheDir(), mPictureName);
+        // 写入文件
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(data, 0, data.length);
+            fos.flush();
+            Log.w(TAG, "Picture save to " + file);
+            // 返回照片地址
+            return file;
+        } catch (IOException e) {
+            Log.w(TAG, "Cannot write to " + file, e);
+            return null;
+        }
+    }
 }
