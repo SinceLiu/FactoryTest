@@ -5,8 +5,6 @@ android {
         applicationId "com.dinghmcn.android.wificonnectclient"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 201906172
-        versionName '0.20190617.2'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -16,6 +14,7 @@ android {
 //            signingConfig signingConfigs.release
         }
     }
+
     buildToolsVersion '28.0.3'
     productFlavors {
     }

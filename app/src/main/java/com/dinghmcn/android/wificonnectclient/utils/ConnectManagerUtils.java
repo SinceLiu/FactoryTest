@@ -6,6 +6,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.dinghmcn.android.wificonnectclient.MainActivity;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -201,35 +203,50 @@ public class ConnectManagerUtils {
         assert null != mThreadPool;
         mThreadPool.execute(() -> {
             long delayedTime = 8000L;
-            long start = System.currentTimeMillis();
-            // 开启wifi
-            while (System.currentTimeMillis() < start + delayedTime) {
-                if (wifiManagerUtils.isWifiEnabled()) {
-                    if (!wifiManagerUtils.isWifiConnected(wifiSsid)) {
-                        wifiManagerUtils.connectWifi(wifiSsid, wifiPassWord);
+            long start;
+            //新增重试次数
+            int retry = 0;
+            int maxretry = 3;
+
+            while (retry < maxretry) {
+                start = System.currentTimeMillis();
+                // 开启wifi
+                while (System.currentTimeMillis() < start + delayedTime) {
+                    if (wifiManagerUtils.isWifiEnabled()) {
+                        if (!wifiManagerUtils.isWifiConnected(wifiSsid)) {
+                            wifiManagerUtils.connectWifi(wifiSsid, wifiPassWord);
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            break;
+                        }
+                    } else {
+                        wifiManagerUtils.openWifi();
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                    } else {
-                        break;
-                    }
-                } else {
-                    wifiManagerUtils.openWifi();
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
                 }
+                Log.d(TAG, "Connect server1");
+                if (wifiManagerUtils.isWifiConnected(wifiSsid)) {
+                    ShowMessage( "Connect wifi success!");
+                    break;
+                } else {
+                    retry++;
+                    ShowMessage( "Retry connect wifi, times:" + retry);
+                }
             }
-            Log.d(TAG, "Connect server1");
-            if (wifiManagerUtils.isWifiConnected(wifiSsid)) {
-                Log.e(TAG, "Connect wifi success!");
-            } else {
-                Log.e(TAG, "Connect wifi failed!");
+            if (retry == maxretry)
+            {
+                ShowMessage( "Connect wifi failed,try reopen");
             }
+
+
             // 判断是否能连接服务器
             start = System.currentTimeMillis();
             while (System.currentTimeMillis() < start + delayedTime) {
@@ -453,6 +470,10 @@ public class ConnectManagerUtils {
         }
     }
 
+    private void ShowMessage(String msg)
+    {
+        MainActivity.Instance.ShowMessage(msg);
+    }
     /**
      * The enum Enum command.
      */
@@ -466,6 +487,8 @@ public class ConnectManagerUtils {
          */
         COMMAND,
 
-		SEQ
+		SEQ,
+
+        Alive
     }
 }

@@ -126,7 +126,8 @@ public class MainActivity extends Activity {
     String dir = "cache";
     private String mPictureName = "picture.jpg";
     private Camera mCamera;
-
+    public static MainActivity Instance;
+    private String ip;
 
     /**
      * On create.
@@ -136,11 +137,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        MyRunnable.Instance = this;
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
+        Instance = this;
         mScrollView = findViewById(R.id.message_scrollview);
         mTextView = findViewById(R.id.connect_message);
         mSeq = findViewById(R.id.seq);
@@ -185,7 +188,7 @@ public class MainActivity extends Activity {
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.0.110\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-            prepareConnectServer("{\"IP\":\"192.168.99.117\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
+            prepareConnectServer("{\"IP\":\"192.168.99.112\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
                     "\"PWD\":\"1234567890" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
 //					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
@@ -269,7 +272,7 @@ public class MainActivity extends Activity {
      *
      * @param message
      */
-    private void outPutMessage(String message) {
+    public void outPutMessage(String message) {
         mConnectMessage.append(message).append("\r\n");
         mTextView.setText(mConnectMessage);
         mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
@@ -284,7 +287,7 @@ public class MainActivity extends Activity {
      *
      * @param message
      */
-    private void outPutLog(String message) {
+    public void outPutLog(String message) {
         if (mPrintLog) {
             outPutMessage(message);
         }
@@ -300,6 +303,10 @@ public class MainActivity extends Activity {
                 mSeq.setText(message);
             }
         }
+    }
+
+    public void ShowMessage(String msg) {
+        this.runOnUiThread(new MyRunnable(msg));
     }
 
     /**
@@ -672,6 +679,7 @@ public class MainActivity extends Activity {
                 // 相机
                 String cameraInfo = dataModel.getCamera();
                 if (null != cameraInfo && cameraInfo.contains("-")) {
+                    Log.e("lxx","start");
                     // 保存照片名称
                     mPictureName = cameraInfo + ".jpg";
                     String[] info = cameraInfo.split("-");
@@ -691,7 +699,13 @@ public class MainActivity extends Activity {
                                     mCamera = Camera.open(cameraId);
                                     //设置照片尺寸,需硬件支持该尺寸
                                     Camera.Parameters mParameters = mCamera.getParameters();
-                                    mParameters.setPictureSize(1920, 1080);
+                                    if (cameraId == 0) {
+                                        mParameters.setPictureSize(1600, 1200);
+                                    } else {
+                                        List<Camera.Size> list = mParameters.getSupportedPictureSizes();
+                                        Log.e("lxx", "front camera:" + list.get(0).width + "x" + list.get(0).height);
+                                        mParameters.setPictureSize(list.get(0).width, list.get(0).height);
+                                    }
                                     mCamera.setParameters(mParameters);
                                     mCamera.setPreviewTexture(new SurfaceTexture(10));
                                     mCamera.startPreview();
@@ -712,7 +726,13 @@ public class MainActivity extends Activity {
                             mCamera = Camera.open(cameraId);
                             //设置照片尺寸
                             Camera.Parameters mParameters = mCamera.getParameters();
-                            mParameters.setPictureSize(1920, 1080);
+                            if (cameraId == 0) {
+                                mParameters.setPictureSize(1600, 1200);
+                            } else {
+                                List<Camera.Size> list = mParameters.getSupportedPictureSizes();
+                                Log.e("lxx", "front camera;" + list.get(0).width + "x" + list.get(0).height);
+                                mParameters.setPictureSize(list.get(0).width, list.get(0).height);
+                            }
                             mCamera.setParameters(mParameters);
                             mCamera.setPreviewTexture(new SurfaceTexture(10));
                             mCamera.startPreview();
@@ -727,17 +747,14 @@ public class MainActivity extends Activity {
                 // 蓝牙
                 if (GET.equals(dataModel.getBluetooth())) {
                     bluetoothUtils = BluetoothUtils.getInstance(MainActivity.this);
-                    postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            JSONArray jsonArray = new JSONArray();
-                            Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
-                            for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
-                                jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
-                            }
-                            dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
-                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    postDelayed(() -> {
+                        JSONArray jsonArray = new JSONArray();
+                        Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
+                        for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+                            jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
                         }
+                        dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     }, 100);
                 }
 
@@ -939,6 +956,10 @@ public class MainActivity extends Activity {
                         mainActivity.outPutLogSeq(msg.obj.toString());
                         mConnectManager.sendMessageToServerNotJson("seq=ok");
                         break;
+                    case Alive:
+                        mainActivity.outPutMessage(msg.obj.toString());
+                        mConnectManager.sendMessageToServerNotJson("I am alive!!");
+                        break;
                     default:
                         mainActivity.outPutLog(Integer.toString(msg.what));
                 }
@@ -1026,26 +1047,33 @@ public class MainActivity extends Activity {
      * 拍照、保存图片、上传信息
      */
     private void takePictures() {
-        mCamera.takePicture(null, null, new Camera.PictureCallback() {
+        mMainHandler.postDelayed(new Runnable() {
             @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-                if (data != null) {
-                    File file = createFile(data);
-                    if (file != null && ConnectManagerUtils.mConnected) {
-                        assert mConnectManager != null;
-                        dataModel.setCamera("ok");
-                        mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                        outPutLog(getString(R.string.send_file, Uri.fromFile(file).toString()));
-                        isCameraOpen = false;
+            public void run() {
+                mCamera.takePicture(null, null, new Camera.PictureCallback() {
+                    @Override
+                    public void onPictureTaken(byte[] data, Camera camera) {
+                        if (data != null) {
+                            File file = createFile(data);
+                            if (file != null && ConnectManagerUtils.mConnected) {
+                                assert mConnectManager != null;
+                                dataModel.setCamera("ok");
+                                mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                outPutLog(getString(R.string.send_file, Uri.fromFile(file).toString()));
+                                Log.e("lxx","finish");
+                                isCameraOpen = false;
+                            }
+                        } else {
+                            outPutLog(R.string.execute_command_error);
+                            mConnectManager.sendMessageToServerNotJson("take the picture error");
+                            isCameraOpen = false;
+                        }
                     }
-                } else {
-                    outPutLog(R.string.execute_command_error);
-                    mConnectManager.sendMessageToServerNotJson("take the picture error");
-                    isCameraOpen = false;
-                }
+                });
             }
-        });
+        }, 500);
+
     }
 
     /**

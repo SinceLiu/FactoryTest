@@ -2,7 +2,8 @@
 <!--android:sharedUserId="android.uid.system"-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.dinghmcn.android.wificonnectclient"
-    >
+    android:versionCode="190628001"
+    android:versionName="1.1">
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
