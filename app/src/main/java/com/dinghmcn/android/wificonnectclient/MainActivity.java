@@ -168,6 +168,7 @@ public class MainActivity extends Activity {
 //        Message message = new Message();
 //        message.what = MSG_TESTACTIVITY;
 //        mMainHandler.sendMessageDelayed(message, 1000);
+
         mWifiManagerUtils = WifiManagerUtils.getInstance(this);
         batteryChargeUtils = BatteryChargeUtils.getInstance(this);
         getBatteryInfo();
@@ -186,17 +187,15 @@ public class MainActivity extends Activity {
 //                    "\"PWD\":\"celltel-1502" + "\",\"Station\":1}");
 //			prepareConnectServer("{\"IP\":\"192.168.56.1\",\"Port\":12345,\"SSID\":\"readboy.20.234-2.4G\"," +
 //					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-//			prepareConnectServer("{\"IP\":\"192.168.0.110\",\"Port\":12345,\"SSID\":\"readboy.20.234-5G\"," +
-//					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-            prepareConnectServer("{\"IP\":\"192.168.99.112\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
-                    "\"PWD\":\"1234567890" + "\",\"Station\":1}");
-//			prepareConnectServer("{\"IP\":\"192.168.1.254\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
-//					"\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
+//			prepareConnectServer("{\"IP\":\"192.168.99.115\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
+//					"\"PWD\":\"1234567890" + "\",\"Station\":1}");
+            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
+                    "\"PWD\":\"" + "\",\"Station\":1}");
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
                     ",\"PWD\":\"28896800\",\"Station\":1}");
-        }
 
+        }
     }
 
     /**
@@ -1041,7 +1040,6 @@ public class MainActivity extends Activity {
         }
         return versionName;
     }
-
 
     /**
      * 拍照、保存图片、上传信息

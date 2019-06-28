@@ -58,20 +58,16 @@ public class CameraActivity extends AppCompatActivity implements
 
         @Override
         public void onPictureTaken(CameraView cameraView, final byte[] data) {
-            if (data != null) {
-                Log.d(TAG, "onPictureTaken " + data.length);
-                Objects.requireNonNull(getBackgroundHandler()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        createFile(data);
-                    }
-                });
-            } else {
-                Log.v("hqb", "hqb__CameraActivityfinish__onPictureTaken__data is null");
-                setResult(RESULT_CANCELED);
-                finish();
-            }
+        	if(data != null) {
+				Log.d(TAG, "onPictureTaken " + data.length);
+				Objects.requireNonNull(getBackgroundHandler()).post(() -> createFile(data));
+			}else {
+        		Log.v("hqb", "hqb__CameraActivityfinish__onPictureTaken__data is null");
+				setResult(RESULT_CANCELED);
+				finish();
+			}
         }
+
     };
 
     /**
@@ -93,17 +89,17 @@ public class CameraActivity extends AppCompatActivity implements
 
         mCameraView = findViewById(R.id.camera);
 
-        mHandler = new Handler(new Handler.Callback() {
-            @Override
-            public boolean handleMessage(Message message) {
-                switch (message.what) {
-                    case MSG_TAKEPICTURE:
-                        mCameraView.takePicture();
-                        break;
-                }
-                return true;
-            }
-        });
+		mHandler = new Handler(new Handler.Callback() {
+			@Override
+			public boolean handleMessage(Message message) {
+				switch (message.what){
+					case MSG_TAKEPICTURE:
+						mCameraView.takePicture();
+						break;
+				}
+				return true;
+			}
+		});
 
         if (null != mCameraView) {
             init();
@@ -128,10 +124,9 @@ public class CameraActivity extends AppCompatActivity implements
         }
         // 执行拍照
 //        getBackgroundHandler().postDelayed(() -> mCameraView.takePicture(), 1000);
-        Message message = new Message();
+		Message message = new Message();
         message.what = MSG_TAKEPICTURE;
-        mHandler.removeMessages(MSG_TAKEPICTURE);
-        mHandler.sendMessageDelayed(message, 100);
+        mHandler.sendMessageDelayed(message, 1000);
     }
 
     /**
@@ -144,7 +139,7 @@ public class CameraActivity extends AppCompatActivity implements
         mCameraView.stop();
         super.onPause();
         Log.d(TAG, "onPause()");
-        Log.v("hqb", "hqb__CameraActivityfinish__onPause");
+		Log.v("hqb", "hqb__CameraActivityfinish__onPause");
         finish();
     }
 
@@ -185,7 +180,7 @@ public class CameraActivity extends AppCompatActivity implements
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        Log.v("hqb", "hqb__CameraActivityfinish__onBackPressed");
+		Log.v("hqb", "hqb__CameraActivityfinish__onBackPressed");
         finish();
     }
 
@@ -204,11 +199,11 @@ public class CameraActivity extends AppCompatActivity implements
             Log.w(TAG, "Picture save to " + file);
             // 返回照片地址
             setResult(RESULT_OK, new Intent().setData(Uri.fromFile(file)));
-            Log.v("hqb", "hqb__CameraActivityfinish__createFile__success");
+			Log.v("hqb", "hqb__CameraActivityfinish__createFile__success");
             finish();
         } catch (IOException e) {
             Log.w(TAG, "Cannot write to " + file, e);
-            Log.v("hqb", "hqb__CameraActivityfinish__createFile__failed");
+			Log.v("hqb", "hqb__CameraActivityfinish__createFile__failed");
             setResult(RESULT_CANCELED);
             finish();
         }

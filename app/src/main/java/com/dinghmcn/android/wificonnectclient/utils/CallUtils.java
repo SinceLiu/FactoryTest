@@ -133,6 +133,7 @@ public class CallUtils {
                                     Method getDeviceCalibrationFlag = telephonyManager.getMethod("getDeviceCalibrationFlag");
                                     getDeviceCalibrationFlag.setAccessible(true);
                                     String flag = (String) getDeviceCalibrationFlag.invoke(telephony);
+                                    Log.e("lxx", "flag: " + flag);
                                 }
                                 catch (Exception e){
                                     e.printStackTrace();
