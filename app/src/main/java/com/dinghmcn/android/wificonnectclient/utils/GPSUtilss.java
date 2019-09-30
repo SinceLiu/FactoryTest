@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -15,6 +16,7 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -37,6 +39,7 @@ public class GPSUtilss {
     private static Location mLocation = null;
 
     private static Activity mContext;
+    private int mcount=0;
 
     public GPSUtilss(Activity context) {
         this.mContext = context;
@@ -59,8 +62,11 @@ public class GPSUtilss {
         Location location = mLocationManager.getLastKnownLocation(bestProvider);
 //        getLocationData(location);
         mLocation = location;}
+
+            mLocationManager.addGpsStatusListener(listener);
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
+
         // 监听状态
-        mLocationManager.addGpsStatusListener(listener);
 
         // 绑定监听，有4个参数
         // 参数1，设备：有GPS_PROVIDER和NETWORK_PROVIDER两种
@@ -71,7 +77,7 @@ public class GPSUtilss {
 
         // 1秒更新一次，或最小位移变化超过1米更新一次；
         // 注意：此处更新准确度非常低，推荐在service里面启动一个Thread，在run中sleep(10000);然后执行handler.sendMessage(),更新位置
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
+
     }
 
     /**
@@ -94,6 +100,10 @@ public class GPSUtilss {
         // 设置对电源的需求
         criteria.setPowerRequirement(Criteria.POWER_LOW);
         return criteria;
+    }
+    public void remolistener(){
+        if (listener!=null)
+        mLocationManager.removeGpsStatusListener(listener);
     }
 
 
@@ -213,14 +223,15 @@ public class GPSUtilss {
                             .iterator();
                     int count = 0;
                     while (iters.hasNext() && count <= maxSatellites) {
-                        Log.w(TAG, "onGpsStatusChanged: "+"11111111" );
+//                        Log.w(TAG, "onGpsStatusChanged: "+"11111111" );
                         GpsSatellite s = iters.next();
                         count++;
                     }
                     System.out.println("搜索到：" + count + "颗卫星");
                     if (count>0)
                     {
-                        Toast.makeText(mContext,"搜索到：" + count + "颗卫星",Toast.LENGTH_SHORT).show();
+                     mcount=count;
+//                        Toast.makeText(mContext,"搜索到：" + count + "颗卫星",Toast.LENGTH_SHORT).show();
                     }
                     break;
                 // 定位启动
@@ -234,4 +245,7 @@ public class GPSUtilss {
             }
         }
     };
+    public int getcount(){
+        return  mcount;
+     }
 }

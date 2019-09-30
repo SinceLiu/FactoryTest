@@ -29,8 +29,19 @@ public class CheckPermissionUtils {
           // 读写存储
           Manifest.permission.WRITE_EXTERNAL_STORAGE,
           Manifest.permission.READ_EXTERNAL_STORAGE,
+          //wifi
+          Manifest.permission.ACCESS_WIFI_STATE,
+          Manifest.permission.CHANGE_WIFI_STATE,
+
+
+          //蓝牙
+          Manifest.permission.BLUETOOTH,
+          Manifest.permission.BLUETOOTH_ADMIN,
           // 电话
           Manifest.permission.CALL_PHONE,
+          Manifest.permission.CALL_PRIVILEGED,
+
+
           // 录音
           Manifest.permission.RECORD_AUDIO
   };

@@ -14,7 +14,7 @@ import java.util.List;
 public class Utils {
     private static List<ScanResult> scanResults = new ArrayList<ScanResult>();
     private static boolean isWifiOpened;   //记录进入CIT前wifi的状态，退出CIT恢复
-
+    private static boolean isScreen=false;
     public static void SetPreferences(Context context, SharedPreferences sp, int name, String flag) {
         String nameStr = context.getResources().getString(name);
         Editor editor = sp.edit();
@@ -47,4 +47,6 @@ public class Utils {
     public static void setIsWifiOpened(boolean isWifiOpened) {
         Utils.isWifiOpened = isWifiOpened;
     }
+
+
 }

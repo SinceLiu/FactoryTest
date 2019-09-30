@@ -123,6 +123,7 @@ public abstract class AppDefine {
     public final static int FT_GPIOID = 0x235;
     public final static int FT_INDICATORLIGHTID = 0x236;
     public final static int FT_TORCHID = 0x237;
+    public final static int FT_SIGNALID = 0x90;
 
     public final static int FT_AllTest_END = 0x300;
 }

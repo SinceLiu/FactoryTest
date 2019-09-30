@@ -1,11 +1,15 @@
 package com.dinghmcn.android.wificonnectclient.utils;
 
+import android.net.wifi.WifiManager;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.dinghmcn.android.wificonnectclient.CITTestHelper;
 import com.dinghmcn.android.wificonnectclient.MainActivity;
 
 import java.io.BufferedInputStream;
@@ -27,6 +31,7 @@ import jcifs.smb.SmbFile;
 import jcifs.smb.SmbFileOutputStream;
 
 import static com.dinghmcn.android.wificonnectclient.MainActivity.CMD_CODE;
+import static com.dinghmcn.android.wificonnectclient.MainActivity.getDeviceSerial;
 
 /**
  * 管理与服务器的交互
@@ -62,6 +67,10 @@ public class ConnectManagerUtils {
     public static final int COMMAND_ERROR = 4;
 
 	public static final int COMMAND_SEQ = 1000;
+
+	//心跳指令
+    public static final int COMMAND_ALIVE = 1001;
+
     private static final String TAG = ConnectManagerUtils.class.getSimpleName();
     /**
      * 是否连接
@@ -159,8 +168,12 @@ public class ConnectManagerUtils {
                     Log.d(TAG, "hqb Command:" + command);
                     // 处理接收到的消息
                     if (!command.isEmpty()) {
-						if(command.contains("Seq=")){
-							sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
+						if(command.contains("Seq=")) {
+                            sendMessage(EnumCommand.SEQ.ordinal(), COMMAND_SEQ, command);
+                        }
+                        else if (command.contains("Alive"))
+                        {
+                            sendMessage(EnumCommand.Alive.ordinal(), COMMAND_ALIVE, command);
 						}else {
 							parsingCommand(command);
 							sendMessage(EnumCommand.COMMAND.ordinal(), COMMAND_SEND, command);
@@ -199,6 +212,7 @@ public class ConnectManagerUtils {
     public void connectServer(@NonNull final WifiManagerUtils wifiManagerUtils,
                               @NonNull final String wifiSsid,
                               final String wifiPassWord) {
+
         Log.d(TAG, "Connect server.");
         assert null != mThreadPool;
         mThreadPool.execute(() -> {
@@ -208,39 +222,41 @@ public class ConnectManagerUtils {
             int retry = 0;
             int maxretry = 3;
 
-            while (retry < maxretry) {
-                start = System.currentTimeMillis();
-                // 开启wifi
-                while (System.currentTimeMillis() < start + delayedTime) {
-                    if (wifiManagerUtils.isWifiEnabled()) {
-                        if (!wifiManagerUtils.isWifiConnected(wifiSsid)) {
-                            wifiManagerUtils.connectWifi(wifiSsid, wifiPassWord);
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        } else {
-                            break;
-                        }
-                    } else {
-                        wifiManagerUtils.openWifi();
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                Log.d(TAG, "Connect server1");
-                if (wifiManagerUtils.isWifiConnected(wifiSsid)) {
-                    ShowMessage( "Connect wifi success!");
-                    break;
-                } else {
-                    retry++;
-                    ShowMessage( "Retry connect wifi, times:" + retry);
-                }
-            }
+//            while (retry < maxretry) {
+//                start = System.currentTimeMillis();
+//                // 开启wifi
+//                while (System.currentTimeMillis() < start + delayedTime ) {
+//                    if (wifiManagerUtils.isWifiEnabled()) {
+//                        if (!wifiManagerUtils.isWifiConnected(wifiSsid)) {
+//                            wifiManagerUtils.connectWifi(wifiSsid, wifiPassWord);
+//                            try {
+//                                Thread.sleep(500);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        } else {
+//                            break;
+//                        }
+//                    } else {
+//                        wifiManagerUtils.openWifi();
+//                        try {
+//                            ShowMessage( "Open wifi!");
+//                            Thread.sleep(500);
+//                            continue;
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//                Log.d(TAG, "Connect server1");
+//                if (wifiManagerUtils.isWifiConnected(wifiSsid)) {
+//                    ShowMessage( "Connect wifi success!");
+//                    break;
+//                } else {
+//                    retry++;
+//                    ShowMessage( "Retry connect wifi, times:" + retry);
+//                }
+//            }
             if (retry == maxretry)
             {
                 ShowMessage( "Connect wifi failed,try reopen");
@@ -274,7 +290,7 @@ public class ConnectManagerUtils {
             Log.d(TAG, "Connect server2");
             mSocket = new Socket();
             try {
-                mSocket.connect(mInetSocketAddress, 3000);
+                mSocket.connect(mInetSocketAddress, 5000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -298,7 +314,7 @@ public class ConnectManagerUtils {
      * @param message the message
      */
     public void sendFileToServer(File file, String message) {
-        Log.d(TAG, "Send File :" + file.getAbsolutePath());
+        Log.e("CHEN", "Send File :" + file.getAbsolutePath());
         assert mThreadPool != null;
         mThreadPool.execute(() -> {
             InputStream in = null;
@@ -312,9 +328,11 @@ public class ConnectManagerUtils {
 //                String remoteUrl = "smb://software:*@192.168.1.240/software_2017/tmp";
 				String remoteUrl = "smb://test:123@192.168.1.200/Image/CameraTemp";
                 String sn = VersionUtils.getSerialNumber();
-                SmbFile remoteFile = new SmbFile(remoteUrl + "/" + sn + "-" + file.getName());
+                SmbFile  remoteFile = new SmbFile(remoteUrl + "/" + sn + "-" + file.getName());
                 in = new BufferedInputStream(new FileInputStream(file));
                 out = new BufferedOutputStream(new SmbFileOutputStream(remoteFile));
+
+
                 byte[] buffer = new byte[1024 * 4];
                 while ((in.read(buffer, 0, buffer.length)) != -1) {
                     out.write(buffer);
@@ -324,8 +342,20 @@ public class ConnectManagerUtils {
 //                if (null != message) {
 //                    sendMessageToServer(message);
 //                }
+                Log.e("CHEN", "sendFileToServer: success" );
             } catch (IOException e) {
+                //使用Toast来显示异常信息
+                new Thread() {
+                    @Override
+                    public void run() {
+                        Looper.prepare();
+                        Toast.makeText(CITTestHelper.getContext_x(), "远程共享文件纯文本密码已禁用.", Toast.LENGTH_LONG).show();
+                        Looper.loop();
+                    }
+                }.start();//                DisplayToast();
                 e.printStackTrace();
+                Log.e("CHEN", "sendFileToServer: fail" );
+
             } finally {
                 try {
                     if (null != in) {
@@ -339,6 +369,30 @@ public class ConnectManagerUtils {
                 }
             }
         });
+    }
+    /**
+     * 自定义错误处理,收集错误信息 发送错误报告等操作均在此完成.
+     *
+     * @param ex
+     * @return true:如果处理了该异常信息;否则返回false.
+     */
+    private boolean handleException(Throwable ex) {
+        if (ex == null) {
+            return false;
+        }
+
+        //收集设备参数信息
+//        collectDeviceInfo(mContext);
+        //保存日志文件
+//        saveCrashInfo2File(ex);
+        return true;
+    }
+    public void DisplayToast(String str)
+
+    {
+
+
+
     }
 
     /**

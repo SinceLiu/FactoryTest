@@ -5,8 +5,8 @@ android {
         applicationId "com.dinghmcn.android.wificonnectclient"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 201906282
-        versionName '1.1'
+        versionCode 201909192
+        versionName '0.20190919.2'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -46,7 +46,7 @@ dependencies {
     compileOnly files(getLayoutLibPath())
 //    implementation fileTree(include: ['*.jar'], dir: 'libs')
 //    implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.android.support:support-v4:26.0.0'
     implementation 'com.android.support.constraint:constraint-layout:2.0.0-beta1'
 //        compile 'cn.yipianfengye.android:zxing-library:2.2'
     implementation 'pub.devrel:easypermissions:0.2.0'
@@ -57,4 +57,11 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.2'
     compileOnly files("${SDK_DIR}/platforms/android-25/data/layoutlib.jar")
     implementation 'org.samba.jcifs:jcifs:1.3.18-kohsuke-1'
+    implementation 'com.google.zxing:core:3.2.1'
+    implementation 'cn.bingoogolapple:bga-qrcodecore:1.1.7@aar'
+    implementation 'cn.bingoogolapple:bga-zxing:1.1.7@aar'
+
+    implementation project(':simplescanner')
+    implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation 'top.zibin:Luban:1.1.8'
 }

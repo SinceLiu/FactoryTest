@@ -7,12 +7,13 @@ import android.net.Uri;
 import android.os.SystemProperties;
 
 import com.dinghmcn.android.wificonnectclient.AppDefine;
+import com.dinghmcn.android.wificonnectclient.BaseTestActivity;
 
 /**
  * Created by zl121325 on 2019/4/14.
  */
 
-public class SignalUtils {
+public class SignalUtils extends BaseTestActivity {
     Context mContext;
     SharedPreferences mSp;
     private boolean unknownSim = false;
@@ -43,6 +44,8 @@ public class SignalUtils {
         Intent intent112 = new Intent("android.intent.action.CALL_PRIVILEGED");
         intent112.setData(Uri.fromParts("tel", "112", null));
 //        startActivityForResult(intent112, AppDefine.FT_HOOKSETID);
+//        startActivity(intent112);
+
     }
     public void serviceCall(){
         Intent intent = new Intent("android.intent.action.CALL_PRIVILEGED");

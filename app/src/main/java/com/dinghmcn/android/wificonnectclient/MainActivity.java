@@ -3,28 +3,46 @@ package com.dinghmcn.android.wificonnectclient;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.AlertDialog;
+import android.app.AppOpsManager;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.SurfaceTexture;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.net.Uri;
 import android.net.wifi.ScanResult;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemProperties;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ScrollView;
@@ -32,13 +50,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dinghmcn.android.wificonnectclient.model.DataModel;
+import com.dinghmcn.android.wificonnectclient.scanCode.WifiUtils;
 import com.dinghmcn.android.wificonnectclient.utils.BatteryChargeUtils;
 import com.dinghmcn.android.wificonnectclient.utils.BluetoothUtils;
+import com.dinghmcn.android.wificonnectclient.utils.CallUtils;
 import com.dinghmcn.android.wificonnectclient.utils.CheckPermissionUtils;
 import com.dinghmcn.android.wificonnectclient.utils.ConnectManagerUtils;
 import com.dinghmcn.android.wificonnectclient.utils.ConnectManagerUtils.EnumCommand;
+import com.dinghmcn.android.wificonnectclient.utils.CustomPopDialog2;
+import com.dinghmcn.android.wificonnectclient.utils.GPSUtilss;
 import com.dinghmcn.android.wificonnectclient.utils.HeadsetLoopbackUtils;
+import com.dinghmcn.android.wificonnectclient.utils.IRbciService;
+import com.dinghmcn.android.wificonnectclient.utils.LogcatFileManager;
+import com.dinghmcn.android.wificonnectclient.utils.MyActivityManager;
+import com.dinghmcn.android.wificonnectclient.utils.RbciManager;
 import com.dinghmcn.android.wificonnectclient.utils.SensorManagerUtils;
+import com.dinghmcn.android.wificonnectclient.utils.SignalUtils;
 import com.dinghmcn.android.wificonnectclient.utils.StorageUtils;
 import com.dinghmcn.android.wificonnectclient.utils.USBDiskReceiver;
 import com.dinghmcn.android.wificonnectclient.utils.USBDiskUtils;
@@ -46,6 +73,9 @@ import com.dinghmcn.android.wificonnectclient.utils.VersionUtils;
 import com.dinghmcn.android.wificonnectclient.utils.WifiManagerUtils;
 import com.google.gson.Gson;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,11 +85,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * 主界面窗口
@@ -86,6 +122,8 @@ public class MainActivity extends Activity {
      */
     private static final boolean mPrintLog = true;
     private static final String GET = "get";
+    private static final String Start = "start";
+    private static final String END = "end";
     private static boolean isCatchKey = false;
     private static boolean isCatchTouch = false;
     @Nullable
@@ -95,6 +133,19 @@ public class MainActivity extends Activity {
     @Nullable
     private static JSONObject mTouchJsonObject;
     private static JSONArray mTouchMoveJsonObject;
+    private static JSONArray mTouchMoveJsonObject2;
+
+    private String originalSSID;
+    private String originalPassword;
+
+    private int mResult = RESULT_OK;
+    private static int mOK = 2;
+
+    private static String cameraInfod = "";
+
+    private boolean unknownSim = false;
+
+
     /**
      * 日志标志.
      */
@@ -104,15 +155,20 @@ public class MainActivity extends Activity {
      */
     public boolean isCameraOpen = false;
     private ScrollView mScrollView;
-    private TextView mTextView, mSeq;
-    private StringBuilder mConnectMessage;
+    private TextView mTextView, mSeq, mViewTestResult;
+    private SpannableStringBuilder mConnectMessage;
+    private SpannableStringBuilder mTestResult;
     private Handler mMainHandler;
     @Nullable
     private ConnectManagerUtils mConnectManager = null;
     @Nullable
     private WifiManagerUtils mWifiManagerUtils = null;
+    private GPSUtilss mGPSUtilss = null;
+    private SignalUtils mSignalUtils;
+    private CallUtils mCallUtils;
     private BatteryChargeUtils batteryChargeUtils;
     private BluetoothUtils bluetoothUtils;
+    private LogcatFileManager logcatFileManager;
     private VersionUtils versionUtils;
     private StorageUtils storageUtils;
     private HeadsetLoopbackUtils headsetLoopbackUtils;
@@ -122,12 +178,59 @@ public class MainActivity extends Activity {
     private DataModel mKeyDataModel;
     private DataModel mRecordDataModel;
     private USBDiskReceiver usbDiskReceiver;
+    private final static int MY_PERMISSION_REQUEST_CONSTANT = 1001;
+    private static CustomPopDialog2 dialog;
+    private static boolean isScreen;
+    private RbciManager mRbciManager;
+    private IRbciService mIRbciService;
+    private Intent serviceIntent;
+
+
+    final public static int REQUEST_CODE_ASK_CALL_PHONE = 123;
+    private String mMobile;
+
+    public static final int REQUEST_CALL_PERMISSION = 1012; //拨号请求码
+    public static final int REQUEST_ACCESS_FINE_LOCATION = 1013; //GPS请求码
+    private final int HANDER_CALL_RETURN = 1;
+
+     private ActivityManager  mActivityManager;
+    Camera mCamera = null;
+
+
 
     String dir = "cache";
-    private String mPictureName = "picture.jpg";
-    private Camera mCamera;
+
     public static MainActivity Instance;
-    private String ip;
+    private boolean isBlueToothSearchFinish = false;
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onGetMessage(Integer integer) {
+        if (integer == 1010) {
+            sendservermessage(true, mResult);
+        }
+        if (integer == 1011) {
+            isBlueToothSearchFinish = true;
+//            sendBluetooth();
+        }
+
+    }
+
+/*    //发送蓝牙指令给服务器
+    private void sendBluetooth() {
+        JSONArray jsonArray = new JSONArray();
+        Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
+        for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+            jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+        }
+        if (jsonArray.length() <= 0) {
+            dataModel.setBluetooth("无可连接的蓝牙设备");
+        } else {
+            dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
+        }
+        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+    }*/
+
 
     /**
      * On create.
@@ -138,14 +241,28 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyRunnable.Instance = this;
+        EventBus.getDefault().register(this);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+//        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+//                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+
         setContentView(R.layout.activity_main);
         Instance = this;
         mScrollView = findViewById(R.id.message_scrollview);
         mTextView = findViewById(R.id.connect_message);
+        mViewTestResult = findViewById(R.id.test_result);
         mSeq = findViewById(R.id.seq);
         usbDiskReceiver = new USBDiskReceiver();
         IntentFilter filter = new IntentFilter();
@@ -153,8 +270,17 @@ public class MainActivity extends Activity {
         filter.addAction("android.intent.action.MEDIA_UNMOUNTED");
         filter.addAction("android.intent.action.MEDIA_REMOVED");
         registerReceiver(usbDiskReceiver, filter);
+
+
+        if (getIntent() != null) {   //获取到已经连接的wifi 帐号和密码
+            originalSSID = getIntent().getStringExtra("ssid");
+            originalPassword = getIntent().getStringExtra("password");
+        }
+
         testNext();
         dir = System.currentTimeMillis() + "";
+
+
     }
 
     /**
@@ -163,7 +289,7 @@ public class MainActivity extends Activity {
     private void testNext() {
         initPermission();
 
-        mConnectMessage = new StringBuilder();
+        mConnectMessage = new SpannableStringBuilder();
         mMainHandler = new MainHandel(this);
 //        Message message = new Message();
 //        message.what = MSG_TESTACTIVITY;
@@ -172,31 +298,196 @@ public class MainActivity extends Activity {
         mWifiManagerUtils = WifiManagerUtils.getInstance(this);
         batteryChargeUtils = BatteryChargeUtils.getInstance(this);
         getBatteryInfo();
+
+        mRbciManager = new RbciManager(this, mIRbciService);
+
+
+
+//        mSignalUtils=SignalUtils.getInstance(this);
         bluetoothUtils = BluetoothUtils.getInstance(this);
         bluetoothUtils.bluetoothOpen();
         headsetLoopbackUtils = HeadsetLoopbackUtils.getInstance(this);
 //        outPutMessage("headsetLoopbackUtils.start()");
         outPutMessage(getVersionName(this));
+
+//        logcatFileManager = LogcatFileManager.getInstance();
+//        logcatFileManager.startLogcatManager(this);
         versionUtils = VersionUtils.getInstance(this);
         storageUtils = StorageUtils.getInstance(this);
+
+        setscreemlights();
+
+//        Handler handler = new Handler();handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() { mGPSUtilss = new GPSUtilss(MainActivity.this);//测试G500X时候要注销掉不然崩溃
+//                 }}, 5000);
         assert mWifiManagerUtils != null;
         // 获取服务器信息
         String ip = loadFromSDFile("socketIP.txt");
         if (null == ip || ip.trim().isEmpty()) {
-//            prepareConnectServer("{\"IP\":\"172.17.136.145\",\"Port\":12345,\"SSID\":\"celltel\"," +
-//                    "\"PWD\":\"celltel-1502" + "\",\"Station\":1}");
-//			prepareConnectServer("{\"IP\":\"192.168.56.1\",\"Port\":12345,\"SSID\":\"readboy.20.234-2.4G\"," +
-//					"\"PWD\":\"readboy@123" + "\",\"Station\":1}");
-			prepareConnectServer("{\"IP\":\"192.168.99.112\",\"Port\":12345,\"SSID\":\"readboy-24.198-5G\"," +
-					"\"PWD\":\"1234567890" + "\",\"Station\":1}");
-//            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test1\"," +
-//                    "\"PWD\":\"" + "\",\"Station\":1}");
+//			prepareConnectServer("{\"IP\":\"192.168.0.128\",\"Port\":12345,\"SSID\":\"rd123\"," +
+//					"\"PWD\":\"50515051aa.." + "\",\"Station\":1}");
+//            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test\"," +
+//                    "\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
+            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"" + originalSSID + "\"," +
+                    "\"PWD\":\"" + originalPassword + "\",\"Station\":1}");
+            // prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\""+(TextUtils.isEmpty(originalSSID)?"readboy-factory-fqc-test1":originalSSID)+"\"," +
+            //         "\"PWD\":\""+(TextUtils.isEmpty(originalPassword)?"readboy@fqc1":originalPassword)+ "\",\"Station\":1}");
+
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
                     ",\"PWD\":\"28896800\",\"Station\":1}");
+//            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\""+originalSSID+"\"," +
+//                    "\"PWD\":\""+originalPassword+ "\",\"Station\":1}");
+        }
 
+    }
+
+    /**
+     * 设置屏幕亮度
+     */
+    private   void setscreemlight(){
+        int brightness = BrightnessTools.getScreenBrightness(MainActivity.this);
+
+       if (BrightnessTools.isAutoBrightness(MainActivity.this)==true){
+           BrightnessTools.stopAutoBrightness(MainActivity.this);
+       }
+        if (brightness < 100 || brightness>160) {
+            BrightnessTools.setBrightness(this, 128);
+            BrightnessTools.saveBrightness(MainActivity.this,128);
         }
     }
+
+    /**
+     * 设置屏幕亮度
+     */
+    private   void setscreemlights(){
+        if(getScreenMode()==1){
+            BrightnessTools.stopAutoBrightness(MainActivity.this);
+        }
+        Log.e("CHEN","getScreenBrightness:"+getScreenBrightness());
+        if(getScreenBrightness()<=100)
+        {
+            saveScreenBrightness(142);
+            setScreenBrightness(142);
+        }
+        if (getScreenBrightness()>=160){
+            saveScreenBrightness(142);
+            setScreenBrightness(142);
+        }
+        Log.e("CHEN","ScreenBrightness:"+getScreenBrightness());
+
+    }
+    /**
+     * 获得当前屏幕亮度的模式
+     * SCREEN_BRIGHTNESS_MODE_AUTOMATIC=1 为自动调节屏幕亮度
+     * SCREEN_BRIGHTNESS_MODE_MANUAL=0 为手动调节屏幕亮度
+     */
+    private int getScreenMode() {
+        int screenMode = 0;
+        try {
+            screenMode = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE);
+        } catch (Exception localException) {
+
+        }
+        return screenMode;
+    }
+
+    /**
+     * 获得当前屏幕亮度值 0--255
+     */
+    private int getScreenBrightness() {
+        int screenBrightness = 255;
+        try {
+            screenBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
+        } catch (Exception localException) {
+
+        }
+        return screenBrightness;
+    }
+
+    /**
+     * 设置当前屏幕亮度的模式
+     * SCREEN_BRIGHTNESS_MODE_AUTOMATIC=1 为自动调节屏幕亮度
+     * SCREEN_BRIGHTNESS_MODE_MANUAL=0 为手动调节屏幕亮度
+     */
+    private void setScreenMode(int paramInt) {
+        try {
+            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, paramInt);
+        } catch (Exception localException) {
+            localException.printStackTrace();
+        }
+    }
+
+    /**
+     * 设置当前屏幕亮度值 0--255
+     */
+    private void saveScreenBrightness(int paramInt) {
+        try {
+            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, paramInt);
+        } catch (Exception localException) {
+            localException.printStackTrace();
+        }
+    }
+
+    /**
+     * 保存当前的屏幕亮度值，并使之生效
+     */
+    private void setScreenBrightness(int paramInt) {
+        Window localWindow = getWindow();
+        WindowManager.LayoutParams localLayoutParams = localWindow.getAttributes();
+        float f = paramInt / 255.0F;
+        localLayoutParams.screenBrightness = f;
+        localWindow.setAttributes(localLayoutParams);
+    }
+
+    /**
+     * 展示序列号二维码
+     */
+
+    private void showCodeScan() {
+
+        //  Toast.makeText(this, getDeviceSerial(), Toast.LENGTH_SHORT).show();
+        Bitmap bitmap = ZXingUtils.createQRImage(getDeviceSerial(), 500, 500);// 这里是获取图片Bitmap，也可以传入其他参数到Dialog中
+        CustomPopDialog2.Builder dialogBuild = new CustomPopDialog2.Builder(this);
+        dialogBuild.setImage(bitmap);
+        // 点击外部区域关闭
+        dialog = dialogBuild.create();
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.show();
+
+    }
+
+    private void closedialog() {
+        dialog.dismiss();
+    }
+
+    /**
+     * 获取设备的序列号
+     */
+    public static String getDeviceSerial() {
+        String serial = "unknown";
+        try {
+            Class clazz = Class.forName("android.os.Build");
+            Class paraTypes = Class.forName("java.lang.String");
+            Method method = clazz.getDeclaredMethod("getString", paraTypes);
+            if (!method.isAccessible()) {
+                method.setAccessible(true);
+            }
+            serial = (String) method.invoke(null, "ro.serialno");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+        return serial;
+    }
+
 
     /**
      * 初始化权限事件.
@@ -235,7 +526,7 @@ public class MainActivity extends Activity {
                 + "__resultCode == RESULT_OK = " + (resultCode == RESULT_OK) + "__data = " + data);
         if (requestCode == REQUEST_CAMERA_CODE) {
             isCameraOpen = false;
-            Log.w(TAG, "onActivityResult: " + "11 " + (null == data));
+            Log.e(TAG, "onActivityResult: " + "11 " + (null == data));
             if (resultCode == RESULT_OK && null != data) {
                 Uri pictureUri = data.getData();
                 assert pictureUri != null;
@@ -248,23 +539,54 @@ public class MainActivity extends Activity {
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     outPutLog(getString(R.string.send_file, pictureUri.toString()));
                 }
+            } else if (null == data) {
+                if (ConnectManagerUtils.mConnected) {
+                    assert mConnectManager != null;
+                    dataModel.setCamera("error");
+//                mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
+                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                }
+
+                // 相机
+//                String cameraInfo=cameraInfod;
+//                if (null != cameraInfo && cameraInfo.contains("-")) {
+//                    Intent intent20 = new Intent(MainActivity.this, CameraActivity.class)
+//                            .putExtra("CameraInfo", cameraInfo);
+//                    if (isCameraOpen) {
+//                        new Handler().postDelayed(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                startActivityForResult(intent20, REQUEST_CAMERA_CODE);
+//                            }
+//                        }, 4000);
+//                    } else {
+//                        isCameraOpen = true;
+//                        startActivityForResult(intent20, REQUEST_CAMERA_CODE);
+//                    }
+//                }
+//                else {
+//                    outPutLog(R.string.command_type_error);
+//                    mConnectManager.sendMessageToServerNotJson("cameraInfod__type_null");
+//                    Log.e(TAG, "return cameraInfod__type_null.");
+//                }
+            } else if (resultCode == RESULT_CANCELED) {
+                outPutLog(R.string.command_file_error);
+                mConnectManager.sendMessageToServerNotJson("createFile__failed");
+                Log.e(TAG, "return createFile__failed.");
             } else {
                 outPutLog(R.string.execute_command_error);
                 mConnectManager.sendMessageToServerNotJson("execute command error");
                 Log.e(TAG, "return result failed.");
             }
-        } else if (requestCode == REQUEST_SHOWPICTUREFULL) {
-            Log.v("hqb", "hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
-            if (mShowPictureFullDataModel != null) {
-                if (resultCode == RESULT_OK) {
-                    mShowPictureFullDataModel.setScreen("ok");
-                } else {
-                    mShowPictureFullDataModel.setScreen("cancel");
-                }
-                mConnectManager.sendMessageToServer(gson.toJson(mShowPictureFullDataModel, DataModel.class));
-            }
+        } else {
         }
     }
+/**
+ * 反馈服务器数据
+ *
+ * @param
+ */
+
 
     /**
      * 打印消息
@@ -272,7 +594,14 @@ public class MainActivity extends Activity {
      * @param message
      */
     public void outPutMessage(String message) {
-        mConnectMessage.append(message).append("\r\n");
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");//设置日期格式
+        String timeStr = df.format(new Date());
+        SpannableString spannableString = new SpannableString(timeStr + " ");
+        ForegroundColorSpan colorSpan = new ForegroundColorSpan(Color.parseColor("#0099EE"));
+        spannableString.setSpan(colorSpan, 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+
+        mConnectMessage.append(spannableString).append(message).append("\r\n");
+
         mTextView.setText(mConnectMessage);
         mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
     }
@@ -300,6 +629,21 @@ public class MainActivity extends Activity {
         if (!TextUtils.isEmpty(message)) {
             if (mSeq != null) {
                 mSeq.setText(message);
+            }
+        }
+    }
+
+    private void outPutTestResult(String message) {
+        if (!TextUtils.isEmpty(message)) {
+            if (mViewTestResult != null) {
+                SpannableString spannableString = new SpannableString(message + " ");
+                if (message.equals("PASS")) {
+                    spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#00ff00")), 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                } else {
+                    spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#ff0000")), 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                }
+                spannableString.setSpan(new RelativeSizeSpan(4.5f), 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                mViewTestResult.setText((spannableString));
             }
         }
     }
@@ -332,26 +676,36 @@ public class MainActivity extends Activity {
         return super.onKeyDown(keyCode, event);
     }
 
+    private int mTouchRepeat = 0; //过滤掉长按的情况
+    private boolean mPoint2Down = false;  //是否出现双指按下的情况
+    /*   */
+
     /**
      * 记录触摸信息
-     *
-     * @param ev the ev
-     * @return the boolean
      */
     @Override
     public boolean dispatchTouchEvent(@NonNull MotionEvent ev) {
+        int index = ev.getActionIndex();
         Log.d(TAG, "onTouchEvent");
+        int count = ev.getPointerCount();
+        int actionMasked = ev.getActionMasked();
+        int actionIndex = ev.getActionIndex();
+        int pointerCount = ev.getPointerCount();
+        Log.d(TAG, "onTouchEventnum" + count);
         if (isCatchTouch) {
             if (mTouchJsonArray == null) {
                 mTouchJsonArray = new JSONArray();
             }
+
             Log.w(TAG, "dispatchTouchEvent: " + ev.getAction());
-            switch (ev.getAction()) {
+            switch (ev.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     Log.d(TAG, "down");
                     mTouchJsonObject = new JSONObject();
                     mTouchMoveJsonObject = new JSONArray();
+                    mTouchMoveJsonObject2 = new JSONArray();
                     try {
+                        //打印第一个手指的点击操作
                         mTouchJsonObject.put("DOWN", "(" + ev.getRawX() + "," + ev.getRawY() + ")");
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -359,13 +713,36 @@ public class MainActivity extends Activity {
                     break;
                 case MotionEvent.ACTION_MOVE:
                     Log.d(TAG, "move");
+                    Log.d(TAG, "手指数：" + ev.getPointerCount());
+                    for (int i = 0; i < pointerCount; i++) {
+                        Log.d("CHEN", "pointerIndex=" + i + ",pointerId=" + ev.getPointerId(i));
+                        Log.d("CHEN", "第" + (i + 1) + "个手指的X坐标=" + ev.getX(i) + ",Y坐标=" + ev.getY(i));
+                        if (i == 1) {
+                            if (mTouchMoveJsonObject2 != null) {
+                                Log.d(TAG, "move");
+                                //打印手指的滑动坐标
+                                mTouchMoveJsonObject2.put("(" + ev.getX(1) + "," + ev.getY(1) + ")");
+                            }
+                        }
+                    }
+//                    if (ev.getPointerId(index) == 2){
+//                        int pointIndex = ev.findPointerIndex(1);
+//                        Log.d(TAG, "第er根手指位置：x="+ev.getX(pointIndex)+";y="+ev.getY(pointIndex));
+//
+//                    }
+//                    if(ev.getPointerCount()==1) {
                     if (mTouchMoveJsonObject != null) {
+                        Log.d(TAG, "move3");
+                        //打印手指的滑动坐标
                         mTouchMoveJsonObject.put("(" + ev.getRawX() + "," + ev.getRawY() + ")");
                     }
+//                    }
+
                     break;
                 case MotionEvent.ACTION_UP:
                     Log.d(TAG, "up");
                     try {
+                        //打印最后一个手指抬起的坐标
                         assert mTouchJsonObject != null;
                         mTouchJsonObject.put("MOVE", mTouchMoveJsonObject);
                         mTouchJsonObject.put("UP", "(" + ev.getRawX() + "," + ev.getRawY() + ")");
@@ -379,12 +756,48 @@ public class MainActivity extends Activity {
                     mTouchMoveJsonObject = null;
                     mTouchJsonObject = null;
                     break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+//                    mPoint2Down = true;
+                    Log.d(TAG, "move2");
+                    Log.d("CHEN", "第" + (actionIndex + 1) + "个手指按下");
+                    try {
+                        if (mTouchJsonObject != null)
+                            mTouchJsonObject.put("TWODOWN", "(" + ev.getX(1) + "," + ev.getY(1) + ")");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+
+
+                case MotionEvent.ACTION_POINTER_UP:
+                    Log.d(TAG, "move2");
+                    Log.d("CHEN", "第" + (actionIndex + 1) + "个手指抬起");
+//                    if (mPoint2Down && mTouchRepeat < 10) {
+                    //do something here
+                    try {
+                        assert mTouchJsonObject != null;
+                        mTouchJsonObject.put("TWOMOVE", mTouchMoveJsonObject2);
+                        mTouchJsonObject.put("TWOUP", "(" + ev.getX(1) + "," + ev.getY(1) + ")");
+//                            mTouchJsonArray.put(mTouchJsonObject);
+//                            Log.d(TAG, mTouchJsonObject.toString() + " | " + mTouchJsonArray.toString());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    mTouchMoveJsonObject2 = null;
+//                    mTouchJsonArray.put(mTouchJsonObject);
+//                    Log.d(TAG, mTouchJsonObject.toString() + " | " + mTouchJsonArray.toString());
+
+//                        Log.v("tap_tap_event", "It works!");
+//                    }
+                    break;
+
                 default:
             }
             return true;
         }
         return super.dispatchTouchEvent(ev);
     }
+
 
     /**
      * 获取服务器信息，准备连接服务器
@@ -409,10 +822,19 @@ public class MainActivity extends Activity {
             if (ConnectManagerUtils.isIp(serverIp) && serverPort > 0) {
                 InetSocketAddress inetSocketAddress = new InetSocketAddress(serverIp, serverPort);
                 mConnectManager = ConnectManagerUtils.newInstance(mMainHandler, inetSocketAddress);
-                assert mConnectManager != null;
-                assert mWifiManagerUtils != null;
-                mConnectManager.connectServer(mWifiManagerUtils, wifiSsid, wifiPassword);
-                outPutMessage(getString(R.string.connect_loading, inetSocketAddress.toString()));
+//                assert mConnectManager != null;
+//                assert mWifiManagerUtils != null;
+                Log.e("CHEN", "Main:ssid:" + wifiSsid);
+
+//                if (WifiManagerUtils.getInstance(this).isWifiConnected(wifiSsid)) {
+//                    //不用在连接了
+//                    ShowMessage( "Connect wifi success!");
+//                } else {
+                if (mConnectManager != null && mWifiManagerUtils != null) {
+                    mConnectManager.connectServer(mWifiManagerUtils, wifiSsid, wifiPassword);
+                    outPutMessage(getString(R.string.connect_loading, inetSocketAddress.toString()));
+                }
+//                }
             } else {
                 outPutMessage(serverIp + ":" + serverPort + getString(R.string.ip_or_port_illegal));
             }
@@ -445,6 +867,7 @@ public class MainActivity extends Activity {
      */
     @Override
     protected void onDestroy() {
+        EventBus.getDefault().unregister(this);
         try {
             ConnectManagerUtils.mConnected = false;
             if (null != mConnectManager) {
@@ -454,18 +877,21 @@ public class MainActivity extends Activity {
             if (null != batteryChargeUtils) {
                 batteryChargeUtils.unregisterReceiver();
             }
-            if (null != bluetoothUtils) {
-                bluetoothUtils.exit();
-            }
+//            if (null != logcatFileManager) {
+//                logcatFileManager.stopLogcatManager();
+//            }
+//            if (null != bluetoothUtils) {。
+//                bluetoothUtils.exit();
+//            }
 //            if (null != headsetLoopbackUtils) {
 //                headsetLoopbackUtils.stop();
 //            }
-            if (null != usbDiskReceiver) {
-                unregisterReceiver(usbDiskReceiver);
-            }
-            if (mCamera != null) {
+            if(null!=mCamera){
                 mCamera.release();
                 mCamera = null;
+            }
+            if (null != usbDiskReceiver) {
+                unregisterReceiver(usbDiskReceiver);
             }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -512,6 +938,20 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             Log.e("TAG", e.toString());
         }
+    }
+
+    @Override
+    protected void onResume() {
+
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+
+        super.onResume();
     }
 
     /**
@@ -588,6 +1028,7 @@ public class MainActivity extends Activity {
 
                 // 关机
                 if (GET.equals(dataModel.getShutdown())) {
+
                     shutdownSystem();
                 }
 
@@ -626,6 +1067,12 @@ public class MainActivity extends Activity {
 //                            + "," + usbDiskUtils.getSDFreeSize());
 
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                }
+
+
+                if ("close".equals(dataModel.getWifi())) {
+                    outPutMessage("Close Wifi");
+                    mWifiManagerUtils.closeWifi();
                 }
 
                 if (GET.equals(dataModel.getOtg())) {
@@ -677,88 +1124,94 @@ public class MainActivity extends Activity {
 
                 // 相机
                 String cameraInfo = dataModel.getCamera();
+                cameraInfod = cameraInfo;
                 if (null != cameraInfo && cameraInfo.contains("-")) {
-                    Log.e("lxx","start");
-                    // 保存照片名称
-                    mPictureName = cameraInfo + ".jpg";
-                    String[] info = cameraInfo.split("-");
-                    // 前摄或后摄
-                    int cameraId = Integer.parseInt(info[1]);
-                    Log.d(TAG, "cameraId : " + cameraId);
+                    Intent intent20 = new Intent(MainActivity.this, CameraActivity.class)
+                            .putExtra("CameraInfo", cameraInfo);
                     if (isCameraOpen) {
-                        postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    if(isCameraOpen){
-                                        return;
-                                    }
-                                    isCameraOpen = true;
-                                    if (mCamera != null) {
-                                        mCamera.release();
-                                        mCamera = null;
-                                    }
-                                    mCamera = Camera.open(cameraId);
-                                    //设置照片尺寸,需硬件支持该尺寸
-                                    Camera.Parameters mParameters = mCamera.getParameters();
-                                    if (cameraId == 0) {
-                                        mParameters.setPictureSize(1600, 1200);
-                                    } else {
-                                        List<Camera.Size> list = mParameters.getSupportedPictureSizes();
-                                        Log.e("lxx", "front camera:" + list.get(0).width + "x" + list.get(0).height);
-                                        mParameters.setPictureSize(list.get(0).width, list.get(0).height);
-                                    }
-                                    mCamera.setParameters(mParameters);
-                                    mCamera.setPreviewTexture(new SurfaceTexture(10));
-                                    mCamera.startPreview();
-                                    takePictures();
-                                } catch (Exception e) {
-                                    Log.e(TAG, "take pictures error :" + e.toString());
-                                    isCameraOpen = false;
-                                }
-                            }
-                        }, 3000);
+                        postDelayed(() -> startActivityForResult(intent20, REQUEST_CAMERA_CODE), 4000);
                     } else {
-                        try {
-                            isCameraOpen = true;
-                            if (mCamera != null) {
-                                mCamera.release();
-                                mCamera = null;
-                            }
-                            mCamera = Camera.open(cameraId);
-                            //设置照片尺寸
-                            Camera.Parameters mParameters = mCamera.getParameters();
-                            if (cameraId == 0) {
-                                mParameters.setPictureSize(1600, 1200);
-                            } else {
-                                List<Camera.Size> list = mParameters.getSupportedPictureSizes();
-                                Log.e("lxx", "front camera;" + list.get(0).width + "x" + list.get(0).height);
-                                mParameters.setPictureSize(list.get(0).width, list.get(0).height);
-                            }
-                            mCamera.setParameters(mParameters);
-                            mCamera.setPreviewTexture(new SurfaceTexture(10));
-                            mCamera.startPreview();
-                            takePictures();
-                        } catch (Exception e) {
-                            Log.e(TAG, "take pictures error :" + e.toString());
-                            isCameraOpen = false;
-                        }
+                        isCameraOpen = true;
+                        startActivityForResult(intent20, REQUEST_CAMERA_CODE);
                     }
                 }
-
                 // 蓝牙
                 if (GET.equals(dataModel.getBluetooth())) {
-                    bluetoothUtils = BluetoothUtils.getInstance(MainActivity.this);
-                    postDelayed(() -> {
-                        JSONArray jsonArray = new JSONArray();
-                        Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
-                        for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
-                            jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+                    Timer blueToothTimer = new Timer();
+                    TimerTask blueToothTask = new TimerTask() {
+                        int i = 0;
+
+                        @Override
+                        public void run() {
+                            i++;
+                            JSONArray jsonArray = new JSONArray();
+                            Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
+                            if (bluetoothDevices.size() > 0 && isBlueToothSearchFinish) {
+                                for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+                                    jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+                                }
+                                dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                blueToothTimer.cancel();
+                                isBlueToothSearchFinish = false;
+                            } else if (bluetoothDevices.size() <= 0 && isBlueToothSearchFinish) {
+//
+                                if (i >= 60) {
+                                    dataModel.setBluetooth("");
+                                    Log.e("CHEN", "12秒内没有搜到有蓝牙");
+                                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                    blueToothTimer.cancel();
+                                } else {
+                                    bluetoothUtils.bluetoothOpen();
+                                    isBlueToothSearchFinish = false;
+                                    Log.e("CHEN", "重启蓝牙搜索");
+                                }
+
+                            } else if (bluetoothDevices.size() <= 0 ){
+                                Log.e("CHEN", "搜寻蓝牙中");
+                            }
                         }
-                        dataModel.setBluetooth(jsonArray.toString().replace("\\", "").replace("\\", "").replace("[", "").replace("]", ""));
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                    }, 100);
+                    };
+                    blueToothTimer.schedule(blueToothTask, 0, 200);
+                   /* if (bluetoothUtils != null) {
+                        bluetoothUtils.exits();
+                        bluetoothUtils = null;
+                    }
+                    bluetoothUtils = BluetoothUtils.getInstance(MainActivity.this);
+                    if (PermissionUtils.isGranted(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)) {
+                        bluetoothUtils.bluetoothOpen();
+                    } else {
+                        PermissionUtils.permission(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
+                                .callBack(new PermissionUtils.PermissionCallBack() {
+                                    @Override
+                                    public void onGranted(PermissionUtils permissionUtils) {
+                                        bluetoothUtils.bluetoothOpen();
+                                    }
+
+                                    @Override
+                                    public void onDenied(PermissionUtils permissionUtils) {
+                                        Toast.makeText(MainActivity.this, "拒绝了打开蓝牙的权限", Toast.LENGTH_SHORT).show();
+                                    }
+                                }).request();
+                    }
+//                  postDelayed(() -> {
+////                      JSONArray jsonArray = new JSONArray();
+//                        Set<BluetoothDevice> bluetoothDevices = bluetoothUtils.getBluetoothDevices();
+////                        for (BluetoothDevice bluetoothDevice : bluetoothDevices) {
+////                            jsonArray.put(bluetoothDevice.getName() + "," + bluetoothDevice.getAddress());
+////                            Log.e("czl", "jsonArray.bluetoothDevice.getName(): "+bluetoothDevice.getName() );
+////                        }
+//                        if (bluetoothDevices.size() == 0){
+//                            dataModel.setBluetooth("未在可用列表里搜索到蓝牙");
+//                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+//                        }else {
+//
+//                            }
+//
+//                   }, 1000);*/
+
                 }
+
 
                 // 振动
                 if (GET.equals(dataModel.getVibrator())) {
@@ -768,45 +1221,123 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                // 拨号
-                if (GET.equals(dataModel.getDial())) {
-                    Uri uri = Uri.parse("tel:" + 10010);
+                //辅助摄像头进光量
+                if (GET.equals(dataModel.getAuxiliaryCamera())) {
+                    openAuxCameraBrightness();
+                    Timer CameraTimer = new Timer();
+                    TimerTask cameraTask = new TimerTask() {
+                        int i=0;
+                        @Override
+                        public void run() {
+                           i++;
+                        int AuxCameraBrightness = getAuxCameraBrightness();
+                            if (AuxCameraBrightness >0) {
+                                String s = String.valueOf(AuxCameraBrightness);
+                                dataModel.setAuxiliaryCamera(s);
+//                    setAuxiliaryCamera
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+//                                closeCamera();
+                                closeAuxCameraBrightness();
+                                CameraTimer.cancel();
 
-                    Intent intent1 = new Intent(Intent.ACTION_CALL, uri);
+                            }else if(i>=10){
+                                dataModel.setAuxiliaryCamera("");
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+//                                closeCamera();
+                                closeAuxCameraBrightness();
+                                CameraTimer.cancel();
 
-                    intent1.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            }
+                        }
+                    };
+                    CameraTimer.schedule(cameraTask, 0, 500);
 
-                    if (ActivityCompat.checkSelfPermission(MainActivity.this,
-                            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                        return;
-                    } else {
+//                    closeCamera();
+                }
+
+//                GPS
+                if (GET.equals(dataModel.getGps())) {
+                    if(mGPSUtilss==null) {
                         try {
-                            startActivity(intent1);
-                        } catch (Exception e) {
+                            mGPSUtilss = new GPSUtilss(MainActivity.this);
+                        }catch (Exception e) {
                             e.printStackTrace();
                         }
-
                     }
+                    Timer GPSTimer = new Timer();
+                    TimerTask gpsTask = new TimerTask() {
+                        int i=0;
+                        @Override
+                        public void run() {
+                            i++;
+//                        postDelayed(() -> {
+                                assert mGPSUtilss != null;
+                                int GPSREES = mGPSUtilss.getcount();
+                                if (GPSREES > 0) {
+                                    String s = String.valueOf(GPSREES);
+                                    dataModel.setGps(s);
+                                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                    mGPSUtilss.remolistener();
+                                    GPSTimer.cancel();
+//
+                                } else if(i>=20) {
+                                    dataModel.setGps("error");
+                                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                    mGPSUtilss.remolistener();
+                                    GPSTimer.cancel();
+//
+                                }
+
+                        }
+                    };
+                    GPSTimer.schedule(gpsTask, 0, 500);
+//                            },2000);
+
+                }
+
+                // 拨号
+                if (GET.equals(dataModel.getDial())) {
+
+                    if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.CALL_PHONE) !=
+                    PackageManager.PERMISSION_GRANTED){;
+                        Log.e("CHEN","no permission");
+                        ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.CALL_PHONE},
+                                REQUEST_CALL_PERMISSION);
+                    }else {
+                        Log.e("CHEN","has permission");
+                        callPhone();
+                    }
+
+//
                 }
 
                 // wifi
                 if (GET.equals(dataModel.getWifi())) {
-                    assert mWifiManagerUtils != null;
-                    List<ScanResult> rssis = mWifiManagerUtils.getWifis();
-                    JSONArray jsonArray = new JSONArray();
-                    for (ScanResult wifi : rssis) {
-                        jsonArray.put(wifi.SSID + "," + wifi.level);
-                    }
-                    dataModel.setWifi(jsonArray.toString().replace("\"", "")
-                            .replace("[", "").replace("]", ""));
-                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    Timer wifiTimer = new Timer();
+                    TimerTask wifiTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            assert mWifiManagerUtils != null;
+//                            List<ScanResult> rssis = mWifiManagerUtils.getWifis();
+                            int wifiREES = mWifiManagerUtils.getWifisRSSI();
+//                            Log.e("czl", "run: "+ rssis.size());
+                            if (wifiREES < 0 && wifiREES > -100) {
+                                JSONArray jsonArray = new JSONArray();
+//                                for (ScanResult wifi : rssis) {
+//                                    jsonArray.put(wifi.SSID + "," + wifi.level);
+//                                }
+//                                dataModel.setWifi(jsonArray.toString().replace("\"", "")
+//                                        .replace("[", "").replace("]", ""));
+                                String WIFIREESd = WifiUtils.getSSID() + "," + wifiREES;
+                                dataModel.setWifi(WIFIREESd);
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                wifiTimer.cancel();
+                            }
+
+                        }
+                    };
+                    wifiTimer.schedule(wifiTask, 0, 200);
+
                 }
 
                 // 录音
@@ -844,40 +1375,84 @@ public class MainActivity extends Activity {
                     }, time);
                 }
 
+                //判断测试总结果
+                if (dataModel.getShowMessage() != null) {
+                    String ret = dataModel.getShowMessage();
+                    if (ret.contains("PASS") && !ret.contains("FAIL")) {
+                        outPutTestResult("PASS");
+                    } else {
+                        outPutTestResult("FAIL");
+                    }
+                }
+
                 // 触摸
-                if (GET.equals(dataModel.getTouch())) {
+                if (Start.equals(dataModel.getTouch())) {
+                    String touch = dataModel.getTouch();
+                    Log.d("TAG", "touchsuccess" + touch);
                     isCatchTouch = true;
                     dataModel.setTouch("ok");
                     mainActivity.mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                    int time = dataModel.getTimeout() * 1000;
-                    postDelayed(() -> {
-                        if (mTouchJsonArray != null) {
-                            mainActivity.mConnectManager.sendMessageToServer(mTouchJsonArray.toString());
-                        }
-                        mTouchJsonArray = null;
-                        isCatchTouch = false;
-                    }, time);
+
+//
+//                         isCatchTouch = false;
+//                    int time = dataModel.getTimeout() * 1000;
+//                    postDelayed(() -> {
+//
+//                    }, time);
+
                 }
+                // 触摸
+                if (END.equals(dataModel.getTouch())) {
+                    String touch = dataModel.getTouch();
+                    Log.d("TAG", "touchsuccess" + touch);
+                    isCatchTouch = false;
+
+                    if (mTouchJsonArray != null) {
+                        mainActivity.mConnectManager.sendMessageToServer(mTouchJsonArray.toString());
+                    } else {
+                        dataModel.setTouch("ok");
+                        mainActivity.mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    }
+                    mTouchJsonArray = null;
+//
+                }
+
 
                 // 屏幕
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
                     mShowPictureFullDataModel = dataModel;
+                    closedialog();//关闭二维码
                     int resId = mainActivity.getResources()
                             .getIdentifier(imageName, "drawable",
                                     mainActivity.getPackageName());
-                    if (resId > 0) {
-                        Log.v("hqb", "hqb__ShowPictureFullActivity__dataModel.getTimeout() = " + dataModel.getTimeout() + "__dataModel.getTimeout() * 1000 = " + (dataModel.getTimeout() * 1000));
-                        final Intent intent30 = new Intent(mainActivity,
-                                ShowPictureFullActivity.class).putExtra("res_id", resId).putExtra("timeout", dataModel.getTimeout() * 1000);
-//                        mainActivity.startActivity(intent30);
-                        mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
+
+                    if (resId > 0) {    //背景id
+                        if (dataModel.getScreenoperation() == 0) {   //开
+                            Log.v("hqb", "hqb__ShowPictureFullActivity__dataModel.getScreenopeneration() = " + dataModel.getScreenoperation());
+//                        dataModel.getTimeout() + "__dataModel.getTimeout() * 1000 = " + (dataModel.getTimeout() * 1000)
+                            final Intent intent30 = new Intent(mainActivity,
+                                    ShowPictureFullActivity.class).putExtra("res_id", resId).putExtra("getScreenopeneration", dataModel.getScreenoperation());
+                            mainActivity.startActivity(intent30);
+//                            mainActivity.startActivityForResult(intent30, REQUEST_SHOWPICTUREFULL);
+//                           Log.e("CHEN",Utils.getisScreen()+"");
+//                            seuccess(); //执行到这个时候
+                        } else if (dataModel.getScreenoperation() == 1) {     //关掉
+                            Activity topActivity = MyActivityManager.getInstance().getCurrentActivity();
+                            if (topActivity instanceof ShowPictureFullActivity) {
+
+                                topActivity.finish();   //关掉
+                            }
+                            sendservermessage(true, mResult);
+                        }
+
                         mainActivity.outPutLog(mainActivity.getString(R.string.show_file, imageName));
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.show_file, imageName));
-                    } else {
+                    } else {    //非法背景id
                         mainActivity.outPutLog(mainActivity.getString(R.string.file_not_exist, imageName));
                         Log.d(mainActivity.TAG, mainActivity.getString(R.string.file_not_exist, imageName));
                     }
+
                 }
             } else if (msg.what == MSG_TESTACTIVITY) {
 //				mShowPictureFullDataModel = new DataModel();
@@ -933,6 +1508,7 @@ public class MainActivity extends Activity {
                                 mainActivity.outPutMessage(R.string.connect_closed);
                                 break;
                             case ConnectManagerUtils.CONNECT_SUCCESS:
+                                showCodeScan();  //展示二维码
                                 mainActivity.outPutMessage(R.string.connect_success);
                                 break;
                             default:
@@ -961,12 +1537,203 @@ public class MainActivity extends Activity {
                     case Alive:
                         mainActivity.outPutMessage(msg.obj.toString());
                         mConnectManager.sendMessageToServerNotJson("I am alive!!");
+                        mainActivity.outPutMessage("I am alive!!");
                         break;
                     default:
                         mainActivity.outPutLog(Integer.toString(msg.what));
                 }
             }
         }
+    }
+
+
+
+
+//
+    private void callPhone() {
+
+        try {
+            Intent intent = new Intent("android.intent.action.CALL_PRIVILEGED", Uri.parse("tel:" + 112));
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            new Handler().postDelayed(new Runnable() {
+                public void run() {
+                    try {
+                        // 延迟5秒后自动挂断电话
+                        // 首先拿到TelephonyManager
+                        TelephonyManager telMag = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        Class<TelephonyManager> c = TelephonyManager.class;
+
+                        // 再去反射TelephonyManager里面的私有方法 getITelephony 得到 ITelephony对象
+                        Method mthEndCall = c.getDeclaredMethod("getITelephony", (Class[]) null);
+                        //允许访问私有方法
+                        mthEndCall.setAccessible(true);
+                        final Object obj = mthEndCall.invoke(telMag, (Object[]) null);
+
+                        // 再通过ITelephony对象去反射里面的endCall方法，挂断电话
+                        Method mt = obj.getClass().getMethod("endCall");
+                        //允许访问私有方法
+                        mt.setAccessible(true);
+                        mt.invoke(obj);
+//                        Toast.makeText(MainActivity.this, "挂断电话！", Toast.LENGTH_SHORT).show();
+                        dataModel.setDial("ok");
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    } catch (Exception e) {
+                        dataModel.setDial("error");
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                        e.printStackTrace();
+                    }
+                }
+            }, 8 * 1000);
+        }catch (Exception e) {
+                            e.printStackTrace();
+                        }
+    }
+
+
+    /**
+     * 判断是否有某项权限
+     *
+     * @param string_permission 权限
+     * @param request_code      请求码
+     * @return
+     */
+    public boolean checkReadPermission(String string_permission, int request_code) {
+        boolean flag = false;
+        if (ContextCompat.checkSelfPermission(this, string_permission) == PackageManager.PERMISSION_GRANTED) {//已有权限
+            flag = true;
+        } else {//申请权限
+            ActivityCompat.requestPermissions(this, new String[]{string_permission}, request_code);
+        }
+        return flag;
+    }
+
+    /**
+     * 检查权限后的回调
+     *
+     * @param requestCode  请求码
+     * @param permissions  权限
+     * @param grantResults 结果
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CALL_PERMISSION: //拨打电话
+                if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
+                    Log.e("CHEN1","no permission");
+                    Toast.makeText(this, "请允许拨号权限后再试", Toast.LENGTH_SHORT).show();
+                } else {//成功
+                    Log.e("CHEN1","has permission");
+//                    callPhone();
+                }
+                break;
+            case REQUEST_ACCESS_FINE_LOCATION: //GPS
+                if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
+                    Log.e("CHEN1","no permission");
+                    Toast.makeText(this, "请允许GPS权限后再试", Toast.LENGTH_SHORT).show();
+                } else {//成功
+                    Log.e("CHEN1","has permission");
+//                    callPhone();
+                    checkGPS();
+                }
+                break;
+
+        }
+    }
+
+    /**
+     * 检测GPS权限
+     *
+     * @param
+     */
+    public void checkGPS() {
+        if (checkReadPermission(Manifest.permission.ACCESS_FINE_LOCATION, REQUEST_ACCESS_FINE_LOCATION)) {
+//
+        }
+    }
+
+
+    //获取辅摄像头进光量
+    //由于是调用读书郎本地的东西，下面报错不需要管
+
+    public int getAuxCameraBrightness() {
+        try {
+            @SuppressLint("WrongConstant") Object manager = getSystemService("rbci");
+            Class rbciManager = manager.getClass();
+            Method getAuxCameraBrightness = rbciManager.getMethod("GetAuxCameraBrightness");
+            getAuxCameraBrightness.setAccessible(true);
+            Log.e("CHEN","打印辅摄像头进光量"+getAuxCameraBrightness.invoke(manager,null));
+            return (int) getAuxCameraBrightness.invoke(manager, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+    public int openAuxCameraBrightness() {
+        try {
+            @SuppressLint("WrongConstant") Object manager = getSystemService("rbci");
+            Class rbciManager = manager.getClass();
+            Method closeAuxCamera = rbciManager.getMethod("OpenAuxCamera");
+            closeAuxCamera.setAccessible(true);
+            Log.e("CHEN", "开启摄像头进光量");
+            return (int) closeAuxCamera.invoke(manager, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+    public int closeAuxCameraBrightness() {
+        try {
+            @SuppressLint("WrongConstant") Object manager = getSystemService("rbci");
+            Class rbciManager = manager.getClass();
+            Method closeAuxCamera = rbciManager.getMethod("CloseAuxCamera");
+            closeAuxCamera.setAccessible(true);
+            Log.e("CHEN", "关闭摄像头进光量");
+            return (int) closeAuxCamera.invoke(manager, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+    /**
+     * 关闭相机，释放资源。
+     */
+    private void closeCamera() {
+        if (mCamera != null) {
+            mCamera.release();
+            mCamera = null;
+        }
+    }
+
+    public void openAuxCameraBrightnessd() {
+        int numberOfCameras = Camera.getNumberOfCameras();// 获取摄像头个数
+        //遍历摄像头信息
+        for (int cameraId = 1; cameraId < numberOfCameras; cameraId++) {
+            Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+            Camera.getCameraInfo(cameraId, cameraInfo);
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {//后摄像头
+                mCamera = Camera.open(cameraId);//打开摄像头
+            }
+        }
+    }
+
+
+    //返回切黑白屏的指令给服务器
+    private void sendservermessage(boolean requestCode, int resultCode) {
+
+        if (requestCode == true) {
+            Log.v("hqb", "hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
+            if (mShowPictureFullDataModel != null) {
+
+                if (resultCode == RESULT_OK) {
+                    mShowPictureFullDataModel.setScreen("ok");
+                } else {
+                    mShowPictureFullDataModel.setScreen("cancel");
+                }
+                mConnectManager.sendMessageToServer(gson.toJson(mShowPictureFullDataModel, DataModel.class));
+            }
+        }
+
     }
 
 
@@ -1036,6 +1803,7 @@ public class MainActivity extends Activity {
             String pkName = context.getPackageName();
             versionName = "版本：" + context.getPackageManager().getPackageInfo(
                     pkName, 0).versionName;
+
 // 			int versionCode = this.getPackageManager()
 // 					.getPackageInfo(pkName, 0).versionCode;
 // 			return pkName + "   " + versionName + "  " + versionCode;
@@ -1044,56 +1812,6 @@ public class MainActivity extends Activity {
         return versionName;
     }
 
-    /**
-     * 拍照、保存图片、上传信息
-     */
-    private void takePictures() {
-        mMainHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mCamera.takePicture(null, null, new Camera.PictureCallback() {
-                    @Override
-                    public void onPictureTaken(byte[] data, Camera camera) {
-                        if (data != null) {
-                            File file = createFile(data);
-                            if (file != null && ConnectManagerUtils.mConnected) {
-                                assert mConnectManager != null;
-                                dataModel.setCamera("ok");
-                                mConnectManager.sendFileToServer(file, gson.toJson(dataModel, DataModel.class));
-                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                                outPutLog(getString(R.string.send_file, Uri.fromFile(file).toString()));
-                                Log.e("lxx","finish");
-                                isCameraOpen = false;
-                            }
-                        } else {
-                            outPutLog(R.string.execute_command_error);
-                            mConnectManager.sendMessageToServerNotJson("take the picture error");
-                            isCameraOpen = false;
-                        }
-                    }
-                });
-            }
-        }, 500);
-    }
 
-    /**
-     * 保存照片文件
-     *
-     * @param data the data
-     */
-    private File createFile(@NonNull byte[] data) {
-        assert mCamera != null;
-        File file = new File(getExternalCacheDir(), mPictureName);
-        // 写入文件
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            fos.write(data, 0, data.length);
-            fos.flush();
-            Log.w(TAG, "Picture save to " + file);
-            // 返回照片地址
-            return file;
-        } catch (IOException e) {
-            Log.w(TAG, "Cannot write to " + file, e);
-            return null;
-        }
-    }
 }
+

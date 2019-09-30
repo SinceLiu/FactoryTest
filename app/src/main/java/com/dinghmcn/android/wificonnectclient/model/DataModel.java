@@ -118,6 +118,10 @@ public class DataModel {
      */
     private String dial;
     /**
+     * 辅助摄像头进光量
+     */
+    private String AuxiliaryCamera;
+    /**
      * 版本号
      */
     private String version;
@@ -158,6 +162,27 @@ public class DataModel {
      */
     private byte[] file;
 
+    /**
+     * 切屏开关
+     */
+    private int ScreenOperation;
+    /**
+     * Gets screenoperation.
+     *
+     * @return the screenoperation
+     */
+    public int getScreenoperation() {
+        return ScreenOperation;
+    }
+
+    /**
+     * Sets screenoperation.
+     *
+     * @param ScreenOperation the screenoperation
+     */
+    public void setScreenoperation(int ScreenOperation) {
+        this.ScreenOperation = ScreenOperation;
+    }
     /**
      * Gets ip.
      *
@@ -498,6 +523,24 @@ public class DataModel {
      */
     public void setVibrator(String vibrator) {
         this.vibrator = vibrator;
+    }
+
+    /**
+     * Gets carmeralight.
+     *
+     * @return the carmeralight
+     */
+    public String getAuxiliaryCamera() {
+        return AuxiliaryCamera;
+    }
+
+    /**
+     * Sets carmeralight.
+     *
+     * @param AuxiliaryCamera the carmeralight
+     */
+    public void setAuxiliaryCamera(String AuxiliaryCamera) {
+        this.AuxiliaryCamera = AuxiliaryCamera;
     }
 
     /**

@@ -23,6 +23,7 @@ public class CommonDrive {
 
 	public static native int InitWifiTestMode();
 
+
 	public static native int deinitWifiTestMode();
 
 	public static native int wifiStartRx(int iChannel);

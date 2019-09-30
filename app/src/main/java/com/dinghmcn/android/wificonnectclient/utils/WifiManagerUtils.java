@@ -5,6 +5,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -35,6 +36,7 @@ public class WifiManagerUtils {
     mContext = context;
     mWifiManager = (WifiManager) context.getApplicationContext()
         .getSystemService(Context.WIFI_SERVICE);
+
   }
 
     /**
@@ -63,12 +65,13 @@ public class WifiManagerUtils {
 
     //如果之前有类似的配置
     WifiConfiguration tempConfig = isExist(ssid);
+
     if (tempConfig != null) {
       //则清除旧有配置
       int netId = mWifiManager.updateNetwork(
           createWifiConfig(ssid, password, getType(ssid), tempConfig.networkId));
       Log.d(TAG, "netId1:" + netId);
-      return mWifiManager.enableNetwork(netId, true);
+      return mWifiManager.enableNetwork(netId < 0 ? tempConfig.networkId:netId, true);
     } else {
       int netId = mWifiManager.addNetwork(createWifiConfig(ssid, password, getType(ssid)));
       Log.d(TAG, "netId2:" + netId);
@@ -112,6 +115,10 @@ public class WifiManagerUtils {
      */
     public void openWifi() {
     mWifiManager.setWifiEnabled(true);
+  }
+
+  public void  closeWifi() {
+    mWifiManager.setWifiEnabled(false);
   }
 
   /**
@@ -220,7 +227,20 @@ public class WifiManagerUtils {
      * @return the list
      */
   public List<ScanResult> getWifis(){
+
     return mWifiManager.getScanResults();
 
   }
+    /**
+     * 获取当前连接WiFi信号强度
+     *
+     * @return the list
+     */
+    public int getWifisRSSI(){
+        WifiInfo mWifiInfo = mWifiManager.getConnectionInfo();
+        int wifi = mWifiInfo.getRssi();//获取wifi信号强度
+        return wifi;
+
+    }
+
 }

@@ -9,6 +9,8 @@
     <string name="command_error">Command Error!</string>
     <string name="wait_command">Wait command . . .</string>
     <string name="execute_command_error">execute command error!</string>
+    <string name="command_file_error">command_error!</string>
+    <string name="command_type_error">command_type_error!</string>
     <string name="send_file">Send file:%1$s</string>
     <string name="file_not_exist">%1$s don\'t exist!</string>
     <string name="show_file">Show %1$s.</string>
@@ -23,4 +25,16 @@
     <string name="str_u">加一级</string>
     <string name="str_d">减一级</string>
     <string name="str_l">当前级别</string>
+
+    <string name="emergency_call">Emergency Call</string>
+    <string name="service_call">Service Call</string>
+    <string name="FMRadio_notice">Choose</string>
+    <string name="HeadSet_hook_message">Please make sure the call duration can press the headphone Hook hang up?</string>
+    <string name="headsethook_name">Headphone hook</string>
+    <string name="telephone_name">Phone</string>
+
+
+    <string name="Success">Success</string>
+    <string name="Failed">Failure</string>
+
 </resources>

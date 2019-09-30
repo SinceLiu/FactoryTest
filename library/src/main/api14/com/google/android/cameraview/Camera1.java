@@ -20,7 +20,9 @@ import android.annotation.SuppressLint;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
+import android.os.Handler;
 import android.support.v4.util.SparseArrayCompat;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 import java.io.IOException;
@@ -28,6 +30,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static android.content.ContentValues.TAG;
+import static android.support.v4.os.HandlerCompat.postDelayed;
 
 
 @SuppressWarnings("deprecation")
@@ -222,24 +227,33 @@ class Camera1 extends CameraViewImpl {
         if (!isCameraOpened()) {
 //            throw new IllegalStateException(
 //                    "Camera is not ready. Call start() before takePicture().");
-			start();
+            start();
         }
 
         if(isCameraOpened()) {
-			if (getAutoFocus()) {
-				mCamera.cancelAutoFocus();
-				mCamera.autoFocus(new Camera.AutoFocusCallback() {
-					@Override
-					public void onAutoFocus(boolean success, Camera camera) {
-						takePictureInternal();
-					}
-				});
-			} else {
-				takePictureInternal();
-			}
-		}else {
-			mCallback.onPictureTaken(null);
-		}
+            if (getAutoFocus()) {
+                mCamera.cancelAutoFocus();
+
+                mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                    @Override
+                    public void onAutoFocus(boolean success, Camera camera) {
+                        Log.e(TAG, "onAutoFocus: "+success );
+                        camera.cancelAutoFocus();
+                        new Handler().postDelayed(new Runnable(){
+
+                            public void run() {
+                                takePictureInternal();
+                                //execute the task
+                            }
+                        }, 1000);
+                    }
+                });
+            } else {
+                takePictureInternal();
+            }
+        }else {
+            mCallback.onPictureTaken(null);
+        }
     }
 
     void takePictureInternal() {
@@ -284,6 +298,7 @@ class Camera1 extends CameraViewImpl {
             Camera.getCameraInfo(i, mCameraInfo);
             if (mCameraInfo.facing == mFacing) {
                 mCameraId = i;
+
                 return;
             }
         }
@@ -296,6 +311,7 @@ class Camera1 extends CameraViewImpl {
         }
         mCamera = Camera.open(mCameraId);
         mCameraParameters = mCamera.getParameters();
+
         // Supported preview sizes
         mPreviewSizes.clear();
         for (Camera.Size size : mCameraParameters.getSupportedPreviewSizes()) {
@@ -343,11 +359,15 @@ class Camera1 extends CameraViewImpl {
         mCameraParameters.setPreviewSize(size.getWidth(), size.getHeight());
         mCameraParameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
         mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
+
         setAutoFocusInternal(mAutoFocus);
         setFlashInternal(mFlash);
         mCamera.setParameters(mCameraParameters);
         if (mShowingPreview) {
             mCamera.startPreview();
+        }
+        if (mCameraId == 1){
+            mCameraParameters.setExposureCompensation(-7);
         }
     }
 
@@ -380,7 +400,7 @@ class Camera1 extends CameraViewImpl {
 
     private void releaseCamera() {
         if (mCamera != null) {
-        	new Exception("releaseCamera").printStackTrace();
+            new Exception("releaseCamera").printStackTrace();
             mCamera.release();
             mCamera = null;
             mCallback.onCameraClosed();
