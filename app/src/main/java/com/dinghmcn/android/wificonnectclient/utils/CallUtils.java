@@ -100,8 +100,9 @@ public class CallUtils {
 //    }
 
     public static CallUtils getInstance(Context mContext){
-        if (instance==null)
+        if (instance==null) {
             instance=new CallUtils(mContext);
+        }
         return instance;
     }
     private class MyPhoneListener extends PhoneStateListener{

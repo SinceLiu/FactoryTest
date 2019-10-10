@@ -179,9 +179,8 @@ public class MainActivity extends Activity {
     public static final int REQUEST_ACCESS_FINE_LOCATION = 1013; //GPS请求码
     private final int HANDER_CALL_RETURN = 1;
 
-     private ActivityManager  mActivityManager;
+    private ActivityManager mActivityManager;
     Camera mCamera = null;
-
 
 
     String dir = "cache";
@@ -218,11 +217,6 @@ public class MainActivity extends Activity {
     }*/
 
 
-    /**
-     * On create.
-     *
-     * @param savedInstanceState the saved instance state
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -257,7 +251,6 @@ public class MainActivity extends Activity {
         filter.addAction("android.intent.action.MEDIA_REMOVED");
         registerReceiver(usbDiskReceiver, filter);
 
-
         if (getIntent() != null) {   //获取到已经连接的wifi 帐号和密码
             originalSSID = getIntent().getStringExtra("ssid");
             originalPassword = getIntent().getStringExtra("password");
@@ -281,11 +274,9 @@ public class MainActivity extends Activity {
 //        message.what = MSG_TESTACTIVITY;
 //        mMainHandler.sendMessageDelayed(message, 1000);
 
-        mWifiManagerUtils = WifiManagerUtils.getInstance(this);
+        mWifiManagerUtils = new WifiManagerUtils(this);
         batteryChargeUtils = BatteryChargeUtils.getInstance(this);
         getBatteryInfo();
-
-
 
 
 //        mSignalUtils=SignalUtils.getInstance(this);
@@ -331,38 +322,38 @@ public class MainActivity extends Activity {
     /**
      * 设置屏幕亮度
      */
-    private   void setscreemlight(){
+    private void setscreemlight() {
         int brightness = BrightnessTools.getScreenBrightness(MainActivity.this);
 
-       if (BrightnessTools.isAutoBrightness(MainActivity.this)==true){
-           BrightnessTools.stopAutoBrightness(MainActivity.this);
-       }
-        if (brightness < 100 || brightness>160) {
+        if (BrightnessTools.isAutoBrightness(MainActivity.this) == true) {
+            BrightnessTools.stopAutoBrightness(MainActivity.this);
+        }
+        if (brightness < 100 || brightness > 160) {
             BrightnessTools.setBrightness(this, 128);
-            BrightnessTools.saveBrightness(MainActivity.this,128);
+            BrightnessTools.saveBrightness(MainActivity.this, 128);
         }
     }
 
     /**
      * 设置屏幕亮度
      */
-    private   void setscreemlights(){
-        if(getScreenMode()==1){
+    private void setscreemlights() {
+        if (getScreenMode() == 1) {
             BrightnessTools.stopAutoBrightness(MainActivity.this);
         }
-        Log.e("CHEN","getScreenBrightness:"+getScreenBrightness());
-        if(getScreenBrightness()<=100)
-        {
+        Log.e("CHEN", "getScreenBrightness:" + getScreenBrightness());
+        if (getScreenBrightness() <= 100) {
             saveScreenBrightness(142);
             setScreenBrightness(142);
         }
-        if (getScreenBrightness()>=160){
+        if (getScreenBrightness() >= 160) {
             saveScreenBrightness(142);
             setScreenBrightness(142);
         }
-        Log.e("CHEN","ScreenBrightness:"+getScreenBrightness());
+        Log.e("CHEN", "ScreenBrightness:" + getScreenBrightness());
 
     }
+
     /**
      * 获得当前屏幕亮度的模式
      * SCREEN_BRIGHTNESS_MODE_AUTOMATIC=1 为自动调节屏幕亮度
@@ -520,7 +511,7 @@ public class MainActivity extends Activity {
                     assert mConnectManager != null;
                     File file = new File(pictureUri.getPath());
                     dataModel.setCamera("ok");
-                    mConnectManager.sendFileToServer(this,file, gson.toJson(dataModel, DataModel.class));
+                    mConnectManager.sendFileToServer(this, file, gson.toJson(dataModel, DataModel.class));
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     outPutLog(getString(R.string.send_file, pictureUri.toString()));
                 }
@@ -871,7 +862,7 @@ public class MainActivity extends Activity {
 //            if (null != headsetLoopbackUtils) {
 //                headsetLoopbackUtils.stop();
 //            }
-            if(null!=mCamera){
+            if (null != mCamera) {
                 mCamera.release();
                 mCamera = null;
             }
@@ -1152,7 +1143,7 @@ public class MainActivity extends Activity {
                                     Log.e("CHEN", "重启蓝牙搜索");
                                 }
 
-                            } else if (bluetoothDevices.size() <= 0 ){
+                            } else if (bluetoothDevices.size() <= 0) {
                                 Log.e("CHEN", "搜寻蓝牙中");
                             }
                         }
@@ -1211,12 +1202,13 @@ public class MainActivity extends Activity {
                     openAuxCameraBrightness();
                     Timer CameraTimer = new Timer();
                     TimerTask cameraTask = new TimerTask() {
-                        int i=0;
+                        int i = 0;
+
                         @Override
                         public void run() {
-                           i++;
-                        int AuxCameraBrightness = getAuxCameraBrightness();
-                            if (AuxCameraBrightness >0) {
+                            i++;
+                            int AuxCameraBrightness = getAuxCameraBrightness();
+                            if (AuxCameraBrightness > 0) {
                                 String s = String.valueOf(AuxCameraBrightness);
                                 dataModel.setAuxiliaryCamera(s);
 //                    setAuxiliaryCamera
@@ -1225,7 +1217,7 @@ public class MainActivity extends Activity {
                                 closeAuxCameraBrightness();
                                 CameraTimer.cancel();
 
-                            }else if(i>=10){
+                            } else if (i >= 10) {
                                 dataModel.setAuxiliaryCamera("");
                                 mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
 //                                closeCamera();
@@ -1242,36 +1234,37 @@ public class MainActivity extends Activity {
 
 //                GPS
                 if (GET.equals(dataModel.getGps())) {
-                    if(mGPSUtilss==null) {
+                    if (mGPSUtilss == null) {
                         try {
                             mGPSUtilss = new GPSUtilss(MainActivity.this);
-                        }catch (Exception e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                     Timer GPSTimer = new Timer();
                     TimerTask gpsTask = new TimerTask() {
-                        int i=0;
+                        int i = 0;
+
                         @Override
                         public void run() {
                             i++;
 //                        postDelayed(() -> {
-                                assert mGPSUtilss != null;
-                                int GPSREES = mGPSUtilss.getcount();
-                                if (GPSREES > 0) {
-                                    String s = String.valueOf(GPSREES);
-                                    dataModel.setGps(s);
-                                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                                    mGPSUtilss.remolistener();
-                                    GPSTimer.cancel();
+                            assert mGPSUtilss != null;
+                            int GPSREES = mGPSUtilss.getcount();
+                            if (GPSREES > 0) {
+                                String s = String.valueOf(GPSREES);
+                                dataModel.setGps(s);
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                mGPSUtilss.remolistener();
+                                GPSTimer.cancel();
 //
-                                } else if(i>=20) {
-                                    dataModel.setGps("error");
-                                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                                    mGPSUtilss.remolistener();
-                                    GPSTimer.cancel();
+                            } else if (i >= 20) {
+                                dataModel.setGps("error");
+                                mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                                mGPSUtilss.remolistener();
+                                GPSTimer.cancel();
 //
-                                }
+                            }
 
                         }
                     };
@@ -1283,13 +1276,14 @@ public class MainActivity extends Activity {
                 // 拨号
                 if (GET.equals(dataModel.getDial())) {
 
-                    if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.CALL_PHONE) !=
-                    PackageManager.PERMISSION_GRANTED){;
-                        Log.e("CHEN","no permission");
-                        ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.CALL_PHONE},
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CALL_PHONE) !=
+                            PackageManager.PERMISSION_GRANTED) {
+                        ;
+                        Log.e("CHEN", "no permission");
+                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CALL_PHONE},
                                 REQUEST_CALL_PERMISSION);
-                    }else {
-                        Log.e("CHEN","has permission");
+                    } else {
+                        Log.e("CHEN", "has permission");
                         callPhone();
                     }
 
@@ -1531,9 +1525,7 @@ public class MainActivity extends Activity {
     }
 
 
-
-
-//
+    //
     private void callPhone() {
 
         try {
@@ -1569,9 +1561,9 @@ public class MainActivity extends Activity {
                     }
                 }
             }, 8 * 1000);
-        }catch (Exception e) {
-                            e.printStackTrace();
-                        }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -1604,19 +1596,19 @@ public class MainActivity extends Activity {
         switch (requestCode) {
             case REQUEST_CALL_PERMISSION: //拨打电话
                 if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
-                    Log.e("CHEN1","no permission");
+                    Log.e("CHEN1", "no permission");
                     Toast.makeText(this, "请允许拨号权限后再试", Toast.LENGTH_SHORT).show();
                 } else {//成功
-                    Log.e("CHEN1","has permission");
+                    Log.e("CHEN1", "has permission");
 //                    callPhone();
                 }
                 break;
             case REQUEST_ACCESS_FINE_LOCATION: //GPS
                 if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
-                    Log.e("CHEN1","no permission");
+                    Log.e("CHEN1", "no permission");
                     Toast.makeText(this, "请允许GPS权限后再试", Toast.LENGTH_SHORT).show();
                 } else {//成功
-                    Log.e("CHEN1","has permission");
+                    Log.e("CHEN1", "has permission");
 //                    callPhone();
                     checkGPS();
                 }
@@ -1646,13 +1638,14 @@ public class MainActivity extends Activity {
             Class rbciManager = manager.getClass();
             Method getAuxCameraBrightness = rbciManager.getMethod("GetAuxCameraBrightness");
             getAuxCameraBrightness.setAccessible(true);
-            Log.e("CHEN","打印辅摄像头进光量"+getAuxCameraBrightness.invoke(manager,null));
+            Log.e("CHEN", "打印辅摄像头进光量" + getAuxCameraBrightness.invoke(manager, null));
             return (int) getAuxCameraBrightness.invoke(manager, null);
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
         }
     }
+
     public int openAuxCameraBrightness() {
         try {
             @SuppressLint("WrongConstant") Object manager = getSystemService("rbci");
@@ -1666,6 +1659,7 @@ public class MainActivity extends Activity {
             return -1;
         }
     }
+
     public int closeAuxCameraBrightness() {
         try {
             @SuppressLint("WrongConstant") Object manager = getSystemService("rbci");
@@ -1679,6 +1673,7 @@ public class MainActivity extends Activity {
             return -1;
         }
     }
+
     /**
      * 关闭相机，释放资源。
      */
