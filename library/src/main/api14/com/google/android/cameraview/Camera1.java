@@ -230,16 +230,16 @@ class Camera1 extends CameraViewImpl {
             start();
         }
 
-        if(isCameraOpened()) {
+        if (isCameraOpened()) {
             if (getAutoFocus()) {
                 mCamera.cancelAutoFocus();
 
                 mCamera.autoFocus(new Camera.AutoFocusCallback() {
                     @Override
                     public void onAutoFocus(boolean success, Camera camera) {
-                        Log.e(TAG, "onAutoFocus: "+success );
+                        Log.e(TAG, "onAutoFocus: " + success);
                         camera.cancelAutoFocus();
-                        new Handler().postDelayed(new Runnable(){
+                        new Handler().postDelayed(new Runnable() {
 
                             @Override
                             public void run() {
@@ -252,7 +252,7 @@ class Camera1 extends CameraViewImpl {
             } else {
                 takePictureInternal();
             }
-        }else {
+        } else {
             mCallback.onPictureTaken(null);
         }
     }
@@ -367,8 +367,10 @@ class Camera1 extends CameraViewImpl {
         if (mShowingPreview) {
             mCamera.startPreview();
         }
-        if (mCameraId == 1){
+        if (mCameraId == 1) {
+            //曝光度:G500X设0，C12设-7
             mCameraParameters.setExposureCompensation(-7);
+//            mCameraParameters.setExposureCompensation(0);
         }
     }
 
@@ -411,9 +413,9 @@ class Camera1 extends CameraViewImpl {
     /**
      * Calculate display orientation
      * https://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
-     *
+     * <p>
      * This calculation is used for orienting the preview
-     *
+     * <p>
      * Note: This is not the same calculation as the camera rotation
      *
      * @param screenOrientationDegrees Screen orientation in degrees
@@ -429,10 +431,10 @@ class Camera1 extends CameraViewImpl {
 
     /**
      * Calculate camera rotation
-     *
+     * <p>
      * This calculation is applied to the output JPEG either via Exif Orientation tag
      * or by actually transforming the bitmap. (Determined by vendor camera API implementation)
-     *
+     * <p>
      * Note: This is not the same calculation as the display orientation
      *
      * @param screenOrientationDegrees Screen orientation in degrees
