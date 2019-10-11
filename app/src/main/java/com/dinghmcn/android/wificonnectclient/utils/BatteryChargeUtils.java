@@ -20,6 +20,7 @@ import static android.content.Context.BATTERY_SERVICE;
 
 /**
  * 获取电池相关信息
+ *
  * @author zl121325
  * @date 2019/4/10
  */
@@ -28,8 +29,6 @@ public class BatteryChargeUtils {
     private String batteryStatus;
     private String quality;
     private boolean isChargingPass = false;
-    @SuppressLint("StaticFieldLeak")
-    private static BatteryChargeUtils instance = null;
     private int plugType;
     private int status;
     private int mLevel;
@@ -37,24 +36,11 @@ public class BatteryChargeUtils {
     private int temperature;
     private BatteryManager batteryManager;
 
-    private BatteryChargeUtils(Context mContext) {
+    public BatteryChargeUtils(Context mContext) {
         this.mContext = mContext;
         batteryManager = (BatteryManager) mContext.getSystemService(BATTERY_SERVICE);
         // 注册电池事件监听器
         mContext.registerReceiver(mChargeInfoReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-    }
-
-    /**
-     * Gets instance.
-     *
-     * @param context the context
-     * @return the instance
-     */
-    public static BatteryChargeUtils getInstance(@NonNull Context context) {
-        if (instance == null) {
-            instance = new BatteryChargeUtils(context);
-        }
-        return instance;
     }
 
     /**
@@ -65,6 +51,7 @@ public class BatteryChargeUtils {
     }
 
     private BroadcastReceiver mChargeInfoReceiver = new BroadcastReceiver() {
+        @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
@@ -116,10 +103,7 @@ public class BatteryChargeUtils {
             if ((line = br.readLine()) != null) {
                 result = Integer.parseInt(line);
             }
-
             br.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -181,8 +165,9 @@ public class BatteryChargeUtils {
      */
     public int getmLevel() {
         int battery = 0;
-        if (Build.VERSION.SDK_INT > 21)
+        if (Build.VERSION.SDK_INT > 21) {
             battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+        }
         if (mLevel != 0) {
             return mLevel;
         } else {

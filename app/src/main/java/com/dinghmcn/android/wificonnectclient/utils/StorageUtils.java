@@ -15,24 +15,9 @@ import java.text.DecimalFormat;
 public class StorageUtils {
 
     private Context mContext;
-    @SuppressLint("StaticFieldLeak")
-    private static StorageUtils instance;
 
-    private StorageUtils(Context context) {
+    public StorageUtils(Context context) {
         this.mContext = context;
-    }
-
-    /**
-     * Get instance storage utils.
-     *
-     * @param mContext the m context
-     * @return the storage utils
-     */
-    public static StorageUtils getInstance(Context mContext){
-        if (null == instance){
-            instance = new StorageUtils(mContext);
-        }
-        return instance;
     }
 
     /**

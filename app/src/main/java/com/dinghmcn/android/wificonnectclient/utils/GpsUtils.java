@@ -41,9 +41,9 @@ public class GpsUtils {
     private Location m_location;
     int MAX_SATELITE_COUNT = 50;
     private GpsStatus m_gpsStatus;
-    GpsInfo mGpsInfo[] = new GpsInfo[MAX_SATELITE_COUNT];
+    GpsInfo[] mGpsInfo = new GpsInfo[MAX_SATELITE_COUNT];
     String strGpsFilePaht = "";
-    boolean m_isGpsOpen = false;
+    boolean isLocationOpened = false;
     private boolean mStartLogGpsData = false;
     private int mSecond = 0;
     st_TimerTask timerTask;
@@ -57,24 +57,18 @@ public class GpsUtils {
             super.handleMessage(msg);
         }
     };
-    private static GpsUtils instance =null;
+
     public GpsUtils(Context mContext) {
         this.mContext = mContext;
         initGpsService();
     }
 
-    public static GpsUtils getInstance(Context mContext){
-        if (instance==null){
-            instance=new GpsUtils(mContext);
-        }
-        return instance;
-    }
     private void initGpsService() {
         strGpsFilePaht = "/data/GpsData.txt";
         boolean bdeleteFile = deleteGpsDataFile(strGpsFilePaht);
         Log.d("Gps", "The bdeleteFile = " + bdeleteFile);
         //}
-        Log.w("initGpsService: ","111" );
+        Log.w("initGpsService: ", "111");
         m_mgr = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
         if (m_mgr == null) {
             Log.i("lvhongshan_gps", "LocationManager is null");
@@ -82,10 +76,8 @@ public class GpsUtils {
         } else {
             Log.i("lvhongshan_gps", "LocationManager is not null");
         }
-        if (!m_mgr.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            m_isGpsOpen = true;
-            openGPS();
-        }
+        openGPS();
+
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -116,7 +108,7 @@ public class GpsUtils {
 
         m_location = m_mgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-        if(m_location==null) {
+        if (m_location == null) {
             Log.i("lvhongshan_gps", "Location is null");
         } else {
             Log.i("lvhongshan_gps", "Location is not null");
@@ -125,28 +117,32 @@ public class GpsUtils {
     }
 
     private final LocationListener locationListener = new LocationListener() {
+        @Override
         public void onLocationChanged(Location location) {
             updateWithNewLocation(location);
             Log.d("Gps", "lvhongshan the onLocationChanged is exced");
         }
 
+        @Override
         public void onProviderDisabled(String provider) {
             updateWithNewLocation(null);
             Log.d("Gps", "lvhongshan the onProviderDisabled is exced");
         }
 
+        @Override
         public void onProviderEnabled(String provider) {
             Log.d("Gps", "lvhongshan the onProviderEnabled is exced");
         }
 
+        @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
             Log.d("Gps", "lvhongshan the onStatusChanged is exced");
         }
     };
 
     private void updateWithNewLocation(Location location) {
-        if (location!=null){
-            Log.w( "updateWithNewLocation: ",location.toString() );
+        if (location != null) {
+            Log.w("updateWithNewLocation: ", location.toString());
         }
     }
 
@@ -163,6 +159,7 @@ public class GpsUtils {
 
     private final GpsStatus.NmeaListener mNmeaListener = new GpsStatus.NmeaListener() {
 
+        @Override
         public void onNmeaReceived(long timestamp, String nmea) {
             //if(isSDcardexist()){
             if (getLogGpsData()) {
@@ -207,44 +204,14 @@ public class GpsUtils {
     }
 
     private void openGPS() {
-//        boolean enabled = true;
-//        Settings.Secure.setLocationProviderEnabled(mContext.getContentResolver(),
-//                LocationManager.NETWORK_PROVIDER, enabled);
-//        Settings.Secure.setLocationProviderEnabled(mContext.getContentResolver(),
-//                LocationManager.GPS_PROVIDER, enabled);
-        initGPS();
-    }
-
-    private void initGPS() {
-        if (!m_mgr.isProviderEnabled(LocationManager.GPS_PROVIDER)&&!m_mgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-//            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-//            builder.setCancelable(false);
-//            builder.setMessage("打开GPS");
-//            builder.setPositiveButton("确定",
-//                    new android.content.DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface arg0, int arg1) {
-//                            // 转到手机设置界面，用户设置GPS
-//                            Intent intent = new Intent(
-//                                    Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-//                            MainActivity activity= (MainActivity) mContext;
-//                            activity.startActivityForResult(intent, 0x21); // 设置完成后返回到原来的界面
-//                            arg0.dismiss();
-//                            gpsDialog=null;
-//                        }
-//                    });
-//            builder.setNeutralButton("取消", new android.content.DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface arg0, int arg1) {
-//                    arg0.dismiss();
-//                    gpsDialog=null;
-//                }
-//            } );
-//            gpsDialog=builder.create();
-//            gpsDialog.show();
-            Settings.Secure.setLocationProviderEnabled(mContext.getContentResolver(),LocationManager.GPS_PROVIDER,true);
+        if (!m_mgr.isProviderEnabled(LocationManager.GPS_PROVIDER) && !m_mgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            isLocationOpened = false;
+            Settings.Secure.setLocationProviderEnabled(mContext.getContentResolver(), LocationManager.GPS_PROVIDER, true);
+        } else {
+            isLocationOpened = true;
         }
     }
+
     private class GpsInfo {
         int prn;
         int iID;
@@ -263,6 +230,7 @@ public class GpsUtils {
 
     class st_TimerTask extends TimerTask {
 
+        @Override
         public void run() {
             mSecond++;
             hGpsHand.sendEmptyMessage(0);
@@ -270,14 +238,8 @@ public class GpsUtils {
 
     }
 
-    private void removeRecive() {
-        m_mgr.removeUpdates(locationListener);
-        m_mgr.removeGpsStatusListener(statusListener);
-        m_mgr.removeNmeaListener(mNmeaListener);
-        st_timer.cancel();
-    }
-
     private GpsStatus.Listener statusListener = new GpsStatus.Listener() {
+        @Override
         public void onGpsStatusChanged(int event) {
             if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -287,11 +249,11 @@ public class GpsUtils {
                 //                                          int[] grantResults)
                 // to handle the case where the user grants the permission. See the documentation
                 // for ActivityCompat#requestPermissions for more details.
-                Log.w( "onGpsStatusChanged: ","111" );
+                Log.w("onGpsStatusChanged: ", "111");
                 return;
             }
             m_gpsStatus = m_mgr.getGpsStatus(null);
-            Log.w( "onGpsStatusChanged: ",event+"----" );
+            Log.w("onGpsStatusChanged: ", event + "----");
             switch (event) {
                 case GpsStatus.GPS_EVENT_FIRST_FIX:
                     int nfixTime = m_gpsStatus.getTimeToFirstFix();
@@ -340,36 +302,44 @@ public class GpsUtils {
             }
         }
     };
+
     private void setStateliteinfo(int validsatelite) {
         int ncount = 6;
 
         int bdIndex = 6;
         int gpsIndex = 0;
         for (int i = 0; i < validsatelite; i++) {
-            if(mGpsInfo[i].prn < 32 && gpsIndex < ncount){
-                gpsIndex ++;
-            }else if(mGpsInfo[i].prn >= 32 && bdIndex < ncount * 2){
-                bdIndex ++;
+            if (mGpsInfo[i].prn < 32 && gpsIndex < ncount) {
+                gpsIndex++;
+            } else if (mGpsInfo[i].prn >= 32 && bdIndex < ncount * 2) {
+                bdIndex++;
             }
         }
         //Modify for passButton clickable when locate success by songguangyu 20140220 start
         if (validsatelite >= 4) {
-            mLocatetime ++;
+            mLocatetime++;
         }
         if (validsatelite >= 4 && mLocatetime <= 1) {
         }
         //Modify for passButton clickable when locate success by songguangyu 20140220 end
     }
 
-    public void exit(){
-        removeRecive();
+    public void exit() {
+        if (!isLocationOpened) {
+            Settings.Secure.setLocationProviderEnabled(mContext.getContentResolver(), LocationManager.GPS_PROVIDER, false);
+        }
+        m_mgr.removeUpdates(locationListener);
+        m_mgr.removeGpsStatusListener(statusListener);
+        m_mgr.removeNmeaListener(mNmeaListener);
+        st_timer.cancel();
     }
+
     public String getmStateliteCount() {
-        return "{Gps:"+mStateliteCount+"}";
+        return "{Gps:" + mStateliteCount + "}";
     }
 
     private synchronized void setLogGpsData(boolean start) {
-        mStartLogGpsData  = start;
+        mStartLogGpsData = start;
     }
 
 }

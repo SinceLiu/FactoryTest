@@ -138,6 +138,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
      */
     private void scheduleAutoFocus() {
         autoFocusHandler.postDelayed(new Runnable() {
+            @Override
             public void run() {
                 safeAutoFocus();
             }
@@ -146,9 +147,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
         //自动对焦完成时此方法被调用
+        @Override
         public void onAutoFocus(boolean success, Camera camera) {
             //Log.d(TAG, "自动对焦完成");
-            Log.e(TAG, "onAutoFocustest: "+success );
+            Log.e(TAG, "onAutoFocustest: " + success);
             scheduleAutoFocus();//一秒之后再次自动对焦
         }
     };
@@ -201,6 +203,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             case Surface.ROTATION_270:
                 degrees = 270;
                 break;
+            default:
+                break;
         }
 
         int result;
@@ -223,7 +227,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         //相机图像默认都是横屏(即宽>高)
         List<Camera.Size> sizes = cameraWrapper.camera.getParameters().getSupportedPreviewSizes();
-        if (sizes == null) return null;
+        if (sizes == null) {
+            return null;
+        }
         int w, h;
         if (DisplayUtils.getScreenOrientation(getContext()) == Configuration.ORIENTATION_LANDSCAPE) {
             w = getWidth();
@@ -241,7 +247,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // Try to find an size match aspect ratio and size
         for (Camera.Size size : sizes) {
             double ratio = (double) size.width / size.height;
-            if (Math.abs(ratio - targetRatio) > aspectTolerance) continue;
+            if (Math.abs(ratio - targetRatio) > aspectTolerance) {
+                continue;
+            }
             if (Math.abs(size.height - targetHeight) < minDiff) {
                 optimalSize = size;
                 minDiff = Math.abs(size.height - targetHeight);

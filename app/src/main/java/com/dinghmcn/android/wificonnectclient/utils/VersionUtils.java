@@ -20,25 +20,9 @@ import static android.content.ContentValues.TAG;
  */
 public class VersionUtils {
     private Context mContext;
-    @SuppressLint("StaticFieldLeak")
-    private static VersionUtils instance;
-    private VersionUtils(Context mContext) {
+    public VersionUtils(Context mContext) {
         this.mContext = mContext;
     }
-
-    /**
-     * Get instance version utils.
-     *
-     * @param mContext the m context
-     * @return the version utils
-     */
-    public static VersionUtils getInstance(Context mContext){
-        if (instance==null){
-            instance = new VersionUtils(mContext);
-        }
-        return instance;
-    }
-
 
     private String getSystemPropertiesString(String property) {
         return SystemProperties.get(property, "unknown");

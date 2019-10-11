@@ -78,9 +78,13 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
      * 设置对焦区域
      */
     private void setupFocusAreas() {
-        if (!shouldAdjustFocusArea) return;
+        if (!shouldAdjustFocusArea) {
+            return;
+        }
 
-        if (cameraWrapper == null) return;
+        if (cameraWrapper == null) {
+            return;
+        }
 
         Camera.Parameters parameters = cameraWrapper.camera.getParameters();
         if (parameters.getMaxNumFocusAreas() <= 0) {
@@ -91,7 +95,9 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
         if (focusAreas == null) {
             int width = 2000, height = 2000;
             Rect framingRect = viewFinderView.getFramingRect();//获得扫码框区域
-            if (framingRect == null) return;
+            if (framingRect == null) {
+                return;
+            }
             int viewFinderViewWidth = ((View) viewFinderView).getWidth();
             int viewFinderViewHeight = ((View) viewFinderView).getHeight();
 
@@ -223,8 +229,9 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
         for (int i = 0; i < rotationCount; i++) {
             byte[] rotatedData = new byte[data.length];
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < width; x++) {
                     rotatedData[x * height + height - y - 1] = data[x + y * width];
+                }
             }
             data = rotatedData;
             int tmp = width;

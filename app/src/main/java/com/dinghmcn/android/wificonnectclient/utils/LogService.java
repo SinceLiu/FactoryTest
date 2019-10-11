@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -178,6 +179,7 @@ public class LogService extends Service {
             Log.d(TAG, "LogCollectorThread is create");
         }
 
+        @SuppressLint("WakelockTimeout")
         @Override
         public void run() {
             try {
@@ -262,7 +264,7 @@ public class LogService extends Service {
 		recordLogServiceLog("========================");
 		*/
         for (ProcessInfo processInfo : allProcList) {
-            if (processInfo.name.toLowerCase().equals("logcat")
+            if ("logcat".equals(processInfo.name.toLowerCase())
                     && processInfo.user.equals(myUser)) {
                 android.os.Process.killProcess(Integer
                         .parseInt(processInfo.pid));
@@ -654,7 +656,6 @@ public class LogService extends Service {
                 e.printStackTrace();
                 Log.e(TAG, e.getMessage(), e);
                 recordLogServiceLog("copy file fail");
-                return false;
             }
         }
 
@@ -715,6 +716,7 @@ public class LogService extends Service {
             this.list = list;
         }
 
+        @Override
         public void run() {
             try {
                 InputStreamReader isr = new InputStreamReader(is);
@@ -737,6 +739,7 @@ public class LogService extends Service {
      *
      */
     class SDStateMonitorReceiver extends BroadcastReceiver{
+        @Override
         public void onReceive(Context context, Intent intent) {
 
             if(Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())){	//存储卡被卸载
@@ -763,6 +766,7 @@ public class LogService extends Service {
      *
      */
     class LogTaskReceiver extends BroadcastReceiver{
+        @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if(SWITCH_LOG_FILE_ACTION.equals(action)){
@@ -774,6 +778,7 @@ public class LogService extends Service {
     }
 
     class FileComparator implements Comparator<File>{
+        @Override
         public int compare(File file1, File file2) {
             if(logServiceLogName.equals(file1.getName())){
                 return -1;

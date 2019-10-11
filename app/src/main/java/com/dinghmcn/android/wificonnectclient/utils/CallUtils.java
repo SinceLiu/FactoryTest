@@ -18,9 +18,9 @@ import static android.content.Context.TELEPHONY_SERVICE;
 
 public class CallUtils {
     private Context mContext;
-    private static CallUtils instance;
     TelephonyManager manager;
     boolean mFlag1 = false, mFlag2 = false, mFlag3 = false;
+
     public CallUtils(Context mContext) {
         this.mContext = mContext;
         getCallService();
@@ -99,29 +99,23 @@ public class CallUtils {
 //        return status;
 //    }
 
-    public static CallUtils getInstance(Context mContext){
-        if (instance==null) {
-            instance=new CallUtils(mContext);
-        }
-        return instance;
-    }
-    private class MyPhoneListener extends PhoneStateListener{
+    private class MyPhoneListener extends PhoneStateListener {
         @Override
         public void onCallStateChanged(int state, String phoneNumber) {
-            switch (state){
-                    case  TelephonyManager.CALL_STATE_IDLE:
-                        break;
-                    case TelephonyManager.CALL_STATE_RINGING:
-                        break;
-                    case TelephonyManager.CALL_STATE_OFFHOOK:
-                        Log.w( "onCallStateChanged: ","1111" );
-                        Toast.makeText(mContext,"已经接通",Toast.LENGTH_SHORT).show();
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                ITelephony telephonyService;
-                                TelephonyManager telephony = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
-                                try {
+            switch (state) {
+                case TelephonyManager.CALL_STATE_IDLE:
+                    break;
+                case TelephonyManager.CALL_STATE_RINGING:
+                    break;
+                case TelephonyManager.CALL_STATE_OFFHOOK:
+                    Log.w("onCallStateChanged: ", "1111");
+                    Toast.makeText(mContext, "已经接通", Toast.LENGTH_SHORT).show();
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            ITelephony telephonyService;
+                            TelephonyManager telephony = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+                            try {
 //                            String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
 //                            String incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
 //                                    Class c = Class.forName(telephony.getClass().getName());
@@ -130,19 +124,19 @@ public class CallUtils {
 //                                    //java.lang.ClassCastException: com.android.internal.telephony.ITelephony$Stub$Proxy cannot be cast to com.dinghmcn.android.wificonnectclient.ITelephony
 //                                    telephonyService = (ITelephony) m.invoke(telephony);
 //                                    telephonyService.endCall();
-                                    Class telephonyManager = telephony.getClass();
-                                    Method getDeviceCalibrationFlag = telephonyManager.getMethod("getDeviceCalibrationFlag");
-                                    getDeviceCalibrationFlag.setAccessible(true);
-                                    String flag = (String) getDeviceCalibrationFlag.invoke(telephony);
-                                    Log.e("lxx", "flag: " + flag);
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                }
+                                Class telephonyManager = telephony.getClass();
+                                Method getDeviceCalibrationFlag = telephonyManager.getMethod("getDeviceCalibrationFlag");
+                                getDeviceCalibrationFlag.setAccessible(true);
+                                String flag = (String) getDeviceCalibrationFlag.invoke(telephony);
+                                Log.e("lxx", "flag: " + flag);
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        },1000);
-
-                            break;
+                        }
+                    }, 1000);
+                    break;
+                default:
+                    break;
             }
             super.onCallStateChanged(state, phoneNumber);
         }

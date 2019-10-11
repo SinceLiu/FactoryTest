@@ -75,7 +75,9 @@ public class ZBarScannerView extends BarcodeScannerView {
      */
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        if (resultHandler == null) return;
+        if (resultHandler == null) {
+            return;
+        }
         long startTime = System.currentTimeMillis();
 
         try {

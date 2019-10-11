@@ -30,7 +30,7 @@ public class ViewFinderView extends RelativeLayout implements IViewFinder {
     private int[] laserActiveDistance;      //扫描线的位置数组
     private static final int LASER_SPEED = 22;        //扫描线的速度
     private int middle = 0;
-    private static final long animationDelay = 100l;
+    private static final long animationDelay = 100L;
     private final int laserColor = Color.parseColor("#FFFFFF"); //扫描线颜色
 
     private final int maskColor = Color.parseColor("#60000000");
@@ -186,6 +186,7 @@ public class ViewFinderView extends RelativeLayout implements IViewFinder {
         framingRect = new Rect(left, top, left + width, top + height);
     }
 
+    @Override
     public Rect getFramingRect() {
         return framingRect;
     }

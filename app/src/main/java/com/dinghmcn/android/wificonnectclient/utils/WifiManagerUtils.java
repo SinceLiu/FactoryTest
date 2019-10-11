@@ -27,7 +27,7 @@ public class WifiManagerUtils {
     private static final int WIFICIPHER_WPA = 2;
 
     private Context mContext;
-    private static WifiManager mWifiManager;
+    private WifiManager mWifiManager;
 
     public WifiManagerUtils(Context context) {
         mContext = context;

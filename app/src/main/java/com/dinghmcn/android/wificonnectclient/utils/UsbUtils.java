@@ -48,15 +48,12 @@ public class UsbUtils {
     private  final String MTP_ADB = "mtp,adb";
     private  final String MTP = "mtp";
     private static UsbUtils instance;
+
     public UsbUtils(Context mContext) {
         this.mContext = mContext;
         getManager();
     }
-    public static UsbUtils getInstance(Context mContext){
-        if (instance==null)
-            instance=new UsbUtils(mContext);
-        return instance;
-    }
+
     private void getManager() {
         mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
     }

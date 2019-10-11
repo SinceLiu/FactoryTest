@@ -55,7 +55,7 @@ public final class WifiUtils {
      */
     public WifiUtils(Context context) {
         // 初始化WifiManager对象
-        mWifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        mWifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
     }
 
     /**
@@ -320,9 +320,9 @@ public final class WifiUtils {
      */
     public static int getWifiTypeInt(String type) {
         // WPA 是本机的用法
-        if (type.equals("2")) {
+        if ("2".equals(type)) {
             return WPA;
-        } else if (type.equals("1")) {
+        } else if ("1".equals(type)) {
             return WEP;
         }
         // 默认没有密码
@@ -342,6 +342,8 @@ public final class WifiUtils {
                 return "1";
             case NOPWD:
                 return "0";
+            default:
+                break;
         }
         return "0";
     }
@@ -508,7 +510,7 @@ public final class WifiUtils {
     public static boolean delWifiConfig(Context context, String ssid) {
         try {
             // 初始化WifiManager对象
-            WifiManager mWifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiManager mWifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             // 获取wifi 连接过的配置信息
             List<WifiConfiguration> listWifiConfigs = mWifiManager.getConfiguredNetworks();
             // 防止为null
@@ -734,6 +736,8 @@ public final class WifiUtils {
                     wifiConfig.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
                     wifiConfig.status = WifiConfiguration.Status.ENABLED;
                     break;
+                default:
+                    break;
             }
             return wifiConfig;
         } catch (Exception e) {
@@ -752,8 +756,9 @@ public final class WifiUtils {
      */
     public boolean removeWifiConfig(WifiConfiguration wcg) {
         // 如果等于null则直接返回
-        if (wcg == null)
+        if (wcg == null) {
             return false;
+        }
         try {
             // 删除配置
             boolean isResult = mWifiManager.removeNetwork(wcg.networkId);
@@ -867,8 +872,9 @@ public final class WifiUtils {
      */
     private void setDNS(InetAddress dns, WifiConfiguration wifiConfig) throws Exception {
         Object linkProperties = getField(wifiConfig, "linkProperties");
-        if (linkProperties == null)
+        if (linkProperties == null) {
             throw new NullPointerException();
+        }
 
         ArrayList<InetAddress> mDnses = (ArrayList<InetAddress>) getDeclaredField(linkProperties, "mDnses");
         mDnses.clear(); // or add a new dns address , here I just want to replace DNS1
@@ -883,8 +889,9 @@ public final class WifiUtils {
      */
     private void setGateway(InetAddress gateway, WifiConfiguration wifiConfig) throws Exception {
         Object linkProperties = getField(wifiConfig, "linkProperties");
-        if (linkProperties == null)
+        if (linkProperties == null) {
             throw new NullPointerException();
+        }
 
         Class routeInfoClass = Class.forName("android.net.RouteInfo");
         Constructor routeInfoConstructor = routeInfoClass.getConstructor(new Class[]{InetAddress.class});
@@ -903,8 +910,9 @@ public final class WifiUtils {
      */
     private void setIpAddress(InetAddress addr, int prefixLength, WifiConfiguration wifiConfig) throws Exception {
         Object linkProperties = getField(wifiConfig, "linkProperties");
-        if (linkProperties == null)
+        if (linkProperties == null) {
             throw new NullPointerException();
+        }
 
         Class laClass = Class.forName("android.net.LinkAddress");
         Constructor laConstructor = laClass.getConstructor(new Class[]{InetAddress.class, int.class});

@@ -10,6 +10,8 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.dinghmcn.android.wificonnectclient.utils.MyActivityManager;
+
 import org.greenrobot.eventbus.EventBus;
 
 /**
@@ -35,8 +37,6 @@ public class ShowPictureFullActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN);
     View decorView = getWindow().getDecorView();
     int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN;
@@ -67,6 +67,7 @@ public class ShowPictureFullActivity extends AppCompatActivity {
       mImageView.setImageResource(resId);
       setResult(mResult);
       EventBus.getDefault().post(1010);
+      MyActivityManager.getInstance().setCurrentActivity(this);
       // 5s 后自动退出
 //      new Handler().postDelayed(() -> finish(), mTimeOut);
     } else {

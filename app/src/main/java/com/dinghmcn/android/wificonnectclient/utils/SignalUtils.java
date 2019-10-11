@@ -17,16 +17,9 @@ public class SignalUtils extends Activity {
     Context mContext;
     SharedPreferences mSp;
     private boolean unknownSim = false;
-    private static SignalUtils instance;
     public SignalUtils(Context mContext) {
         this.mContext = mContext;
         getsimOper();
-    }
-    public static SignalUtils getInstance(Context mContext){
-        if (instance==null) {
-            instance=new SignalUtils(mContext);
-        }
-        return instance;
     }
 
     @Override

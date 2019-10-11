@@ -85,10 +85,12 @@ public class ScanCodeActivity extends AppCompatActivity implements ZBarScannerVi
     public void onPause() {
         super.onPause();
 
-        if (handler != null)
+        if (handler != null) {
             handler.removeCallbacksAndMessages(null);
-        if (zBarScannerView != null)
+        }
+        if (zBarScannerView != null) {
             zBarScannerView.stopCamera();//释放相机资源等各种资源
+        }
     }
 
     @Override

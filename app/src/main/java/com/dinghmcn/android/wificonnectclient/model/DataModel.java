@@ -1,5 +1,7 @@
 package com.dinghmcn.android.wificonnectclient.model;
 
+import java.util.Arrays;
+
 /**
  * 存储获取的状态信息
  */
@@ -739,5 +741,43 @@ public class DataModel {
      */
     public void setShutdown(String shutdown) {
         this.shutdown = shutdown;
+    }
+
+    @Override
+    public String toString() {
+        return "DataModel{" +
+                "ip='" + ip + '\'' +
+                ", socket='" + socket + '\'' +
+                ", showMessage='" + showMessage + '\'' +
+                ", sn='" + sn + '\'' +
+                ", flag='" + flag + '\'' +
+                ", light='" + light + '\'' +
+                ", accelerometer='" + accelerometer + '\'' +
+                ", proximity='" + proximity + '\'' +
+                ", magnetometer='" + magnetometer + '\'' +
+                ", gyroscope='" + gyroscope + '\'' +
+                ", camera='" + camera + '\'' +
+                ", wifi='" + wifi + '\'' +
+                ", gps='" + gps + '\'' +
+                ", bluetooth='" + bluetooth + '\'' +
+                ", sd='" + sd + '\'' +
+                ", otg='" + otg + '\'' +
+                ", sim='" + sim + '\'' +
+                ", record='" + record + '\'' +
+                ", vibrator='" + vibrator + '\'' +
+                ", dial='" + dial + '\'' +
+                ", AuxiliaryCamera='" + AuxiliaryCamera + '\'' +
+                ", version='" + version + '\'' +
+                ", battery='" + battery + '\'' +
+                ", disk='" + disk + '\'' +
+                ", key='" + key + '\'' +
+                ", touch='" + touch + '\'' +
+                ", tip='" + tip + '\'' +
+                ", screen='" + screen + '\'' +
+                ", shutdown='" + shutdown + '\'' +
+                ", timeout=" + timeout +
+                ", file=" + Arrays.toString(file) +
+                ", ScreenOperation=" + ScreenOperation +
+                '}';
     }
 }

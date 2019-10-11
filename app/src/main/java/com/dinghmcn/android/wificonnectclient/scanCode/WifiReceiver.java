@@ -22,13 +22,17 @@ public class WifiReceiver extends BroadcastReceiver {
             NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
             if (info.getState().equals(NetworkInfo.State.DISCONNECTED)) {
                 Log.i(TAG, "wifi断开");
-                if (mListener != null) mListener.onWiFiDisConnect();
+                if (mListener != null) {
+                    mListener.onWiFiDisConnect();
+                }
             } else if (info.getState().equals(NetworkInfo.State.CONNECTED)) {
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                 //获取当前wifi名称
                 Log.i(TAG, "连接到网络 " + wifiInfo.getSSID());
-                if (mListener != null) mListener.onWiFiConnect(wifiInfo.getSSID());
+                if (mListener != null) {
+                    mListener.onWiFiConnect(wifiInfo.getSSID());
+                }
             }
         }
         //wifi打开与否
@@ -36,11 +40,15 @@ public class WifiReceiver extends BroadcastReceiver {
             int wifistate = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_DISABLED);
             if (wifistate == WifiManager.WIFI_STATE_DISABLED) {
                 Log.i(TAG, "系统关闭wifi");
-                if (mListener != null) mListener.onWiFiClose();
+                if (mListener != null) {
+                    mListener.onWiFiClose();
+                }
 
             } else if (wifistate == WifiManager.WIFI_STATE_ENABLED) {
                 Log.i(TAG, "系统开启wifi");
-                if (mListener != null) mListener.onWiFiStart();
+                if (mListener != null) {
+                    mListener.onWiFiStart();
+                }
             }
         }
     }

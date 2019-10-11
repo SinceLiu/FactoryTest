@@ -18,10 +18,6 @@ public class USBDiskUtils {
     private static final String MOUNTS_FILE = "/proc/mounts";
 
     private static String path = "/mnt/usbhost1";
-    /**
-     * The constant instance.
-     */
-    public static USBDiskUtils instance;
     private Context mContext;
 
     /**
@@ -32,18 +28,6 @@ public class USBDiskUtils {
     public USBDiskUtils(Context mContext) {
         this.mContext = mContext;
         isMounted();
-    }
-
-    /**
-     * Get instance usb disk utils.
-     *
-     * @param mContext the m context
-     * @return the usb disk utils
-     */
-    public static USBDiskUtils getInstance(Context mContext){
-        if (instance==null)
-            instance=new USBDiskUtils(mContext);
-        return instance;
     }
 
     /**

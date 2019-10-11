@@ -35,10 +35,7 @@ import top.zibin.luban.OnRenameListener;
  * @date 2018 /4/20 10:47
  * @deprecated 拍照效率好
  */
-public class
-
-
-CameraActivity extends AppCompatActivity implements
+public class CameraActivity extends AppCompatActivity implements
         ActivityCompat.OnRequestPermissionsResultCallback {
     private static final String TAG = "CameraActivity";
 
@@ -113,6 +110,8 @@ CameraActivity extends AppCompatActivity implements
                             mCameraView.takePicture();
                         }
                         break;
+                    default:
+                        break;
                 }
                 return true;
             }
@@ -138,24 +137,24 @@ CameraActivity extends AppCompatActivity implements
             String[] info = cameraInfo.split("-");
             // 前摄或后摄
             int cameraId = Integer.parseInt(info[1]);
-            String[] isfocus=info[0].split("_");
-            String isturefocous=isfocus[1];
+            String[] isfocus = info[0].split("_");
+            String isturefocous = isfocus[1];
 
 
             Log.e("CHEN", "cameraId : " + cameraId);
             mCameraView.setFacing(cameraId);
             if (cameraId == 0) {
-                if (isturefocous.equals("BW")){
+                if ("BW".equals(isturefocous)) {
                     mCameraView.setAutoFocus(false);
-                }else if(isturefocous.equals("BD")){
+                } else if ("BD".equals(isturefocous)) {
                     mCameraView.setAutoFocus(false);
-                }else {
+                } else {
                     mCameraView.setFocusable(true);
                     mCameraView.setAutoFocus(true);
                 }
 //                mCameraView.setAutoFocus(true);
             }
-            if(cameraId==1){
+            if (cameraId == 1) {
                 mCameraView.setFocusable(true);
                 mCameraView.setAutoFocus(true);
             }

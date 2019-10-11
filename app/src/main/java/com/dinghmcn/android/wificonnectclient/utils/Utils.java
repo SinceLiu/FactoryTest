@@ -10,6 +10,6 @@ public class Utils{
         String nameStr = context.getResources().getString(name);
         Editor editor = sp.edit();
         editor.putString(nameStr, flag);
-        editor.commit();
+        editor.apply();
     }
 }

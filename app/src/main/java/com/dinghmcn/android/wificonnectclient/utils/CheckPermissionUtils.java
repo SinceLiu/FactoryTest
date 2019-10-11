@@ -41,7 +41,6 @@ public class CheckPermissionUtils {
           Manifest.permission.CALL_PHONE,
           Manifest.permission.CALL_PRIVILEGED,
 
-
           // 录音
           Manifest.permission.RECORD_AUDIO
   };

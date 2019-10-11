@@ -1,6 +1,5 @@
 package com.dinghmcn.android.wificonnectclient.utils;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -16,8 +15,6 @@ import android.media.MediaRecorder;
  */
 public class HeadsetLoopbackUtils {
 	private static final String TAG = HeadsetLoopbackUtils.class.getSimpleName();
-	@SuppressLint("StaticFieldLeak")
-	private static HeadsetLoopbackUtils instance = null;
 
 	private AudioManager mAudioManager;
 	private int mInputBufferSize;
@@ -29,22 +26,8 @@ public class HeadsetLoopbackUtils {
 	 */
 	public boolean isRecording = false;
 
-	private HeadsetLoopbackUtils(Context context) {
+	public HeadsetLoopbackUtils(Context context) {
 		mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-//		init();
-	}
-
-	/**
-	 * Gets instance.
-	 *
-	 * @param mContext the m context
-	 * @return the instance
-	 */
-	public static HeadsetLoopbackUtils getInstance(Context mContext) {
-		if (instance == null) {
-			instance = new HeadsetLoopbackUtils(mContext);
-		}
-		return instance;
 	}
 
 	/**

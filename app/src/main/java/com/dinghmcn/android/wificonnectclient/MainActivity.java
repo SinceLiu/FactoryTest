@@ -133,7 +133,6 @@ public class MainActivity extends Activity {
 
     private boolean unknownSim = false;
 
-
     /**
      * 日志标志.
      */
@@ -198,7 +197,6 @@ public class MainActivity extends Activity {
             isBlueToothSearchFinish = true;
 //            sendBluetooth();
         }
-
     }
 
 /*    //发送蓝牙指令给服务器
@@ -216,7 +214,6 @@ public class MainActivity extends Activity {
         mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
     }*/
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -225,11 +222,8 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-//                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -259,7 +253,6 @@ public class MainActivity extends Activity {
         testNext();
         dir = System.currentTimeMillis() + "";
 
-
     }
 
     /**
@@ -275,21 +268,18 @@ public class MainActivity extends Activity {
 //        mMainHandler.sendMessageDelayed(message, 1000);
 
         mWifiManagerUtils = new WifiManagerUtils(this);
-        batteryChargeUtils = BatteryChargeUtils.getInstance(this);
-        getBatteryInfo();
-
+        batteryChargeUtils = new BatteryChargeUtils(this);
 
 //        mSignalUtils=SignalUtils.getInstance(this);
-        bluetoothUtils = BluetoothUtils.getInstance(this);
-        bluetoothUtils.bluetoothOpen();
-        headsetLoopbackUtils = HeadsetLoopbackUtils.getInstance(this);
+        bluetoothUtils = new BluetoothUtils(this);
+        headsetLoopbackUtils = new HeadsetLoopbackUtils(this);
 //        outPutMessage("headsetLoopbackUtils.start()");
         outPutMessage(getVersionName(this));
 
 //        logcatFileManager = LogcatFileManager.getInstance();
 //        logcatFileManager.startLogcatManager(this);
-        versionUtils = VersionUtils.getInstance(this);
-        storageUtils = StorageUtils.getInstance(this);
+        versionUtils = new VersionUtils(this);
+        storageUtils = new StorageUtils(this);
 
         setscreemlights();
 
@@ -301,14 +291,15 @@ public class MainActivity extends Activity {
         // 获取服务器信息
         String ip = loadFromSDFile("socketIP.txt");
         if (null == ip || ip.trim().isEmpty()) {
-//			prepareConnectServer("{\"IP\":\"192.168.0.128\",\"Port\":12345,\"SSID\":\"rd123\"," +
-//					"\"PWD\":\"50515051aa.." + "\",\"Station\":1}");
-//            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"readboy-factory-fqc-test\"," +
-//                    "\"PWD\":\"readboy@fqc" + "\",\"Station\":1}");
-            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"" + originalSSID + "\"," +
-                    "\"PWD\":\"" + originalPassword + "\",\"Station\":1}");
+//            prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\"" + originalSSID + "\"," +
+//                    "\"PWD\":\"" + originalPassword + "\",\"Station\":1}");
+
             // prepareConnectServer("{\"IP\":\"192.168.1.253\",\"Port\":12345,\"SSID\":\""+(TextUtils.isEmpty(originalSSID)?"readboy-factory-fqc-test1":originalSSID)+"\"," +
             //         "\"PWD\":\""+(TextUtils.isEmpty(originalPassword)?"readboy@fqc1":originalPassword)+ "\",\"Station\":1}");
+
+            //lxx
+            prepareConnectServer("{\"IP\":" + "192.168.0.110" + ",\"Port\":12345,\"SSID\":\""
+                    + "SoftReadboy2" + "\"," + "\"PWD\":\"" + "kfbrjb2@readboy.com" + "\",\"Station\":1}");
 
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
@@ -422,8 +413,6 @@ public class MainActivity extends Activity {
      */
 
     private void showCodeScan() {
-
-        //  Toast.makeText(this, getDeviceSerial(), Toast.LENGTH_SHORT).show();
         Bitmap bitmap = ZXingUtils.createQRImage(getDeviceSerial(), 500, 500);// 这里是获取图片Bitmap，也可以传入其他参数到Dialog中
         CustomPopDialog2.Builder dialogBuild = new CustomPopDialog2.Builder(this);
         dialogBuild.setImage(bitmap);
@@ -431,7 +420,6 @@ public class MainActivity extends Activity {
         dialog = dialogBuild.create();
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
-
     }
 
     private void closedialog() {
@@ -451,16 +439,9 @@ public class MainActivity extends Activity {
                 method.setAccessible(true);
             }
             serial = (String) method.invoke(null, "ro.serialno");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
         }
-
         return serial;
     }
 
@@ -613,7 +594,7 @@ public class MainActivity extends Activity {
         if (!TextUtils.isEmpty(message)) {
             if (mViewTestResult != null) {
                 SpannableString spannableString = new SpannableString(message + " ");
-                if (message.equals("PASS")) {
+                if ("PASS".equals(message)) {
                     spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#00ff00")), 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
                 } else {
                     spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#ff0000")), 0, spannableString.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
@@ -737,13 +718,13 @@ public class MainActivity extends Activity {
                     Log.d(TAG, "move2");
                     Log.d("CHEN", "第" + (actionIndex + 1) + "个手指按下");
                     try {
-                        if (mTouchJsonObject != null)
+                        if (mTouchJsonObject != null) {
                             mTouchJsonObject.put("TWODOWN", "(" + ev.getX(1) + "," + ev.getY(1) + ")");
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                     break;
-
 
                 case MotionEvent.ACTION_POINTER_UP:
                     Log.d(TAG, "move2");
@@ -843,6 +824,7 @@ public class MainActivity extends Activity {
      */
     @Override
     protected void onDestroy() {
+        Log.e("lxx", "onDestroy");
         EventBus.getDefault().unregister(this);
         try {
             ConnectManagerUtils.mConnected = false;
@@ -856,9 +838,9 @@ public class MainActivity extends Activity {
 //            if (null != logcatFileManager) {
 //                logcatFileManager.stopLogcatManager();
 //            }
-//            if (null != bluetoothUtils) {。
-//                bluetoothUtils.exit();
-//            }
+            if (null != bluetoothUtils) {
+                bluetoothUtils.exit();
+            }
 //            if (null != headsetLoopbackUtils) {
 //                headsetLoopbackUtils.stop();
 //            }
@@ -982,7 +964,9 @@ public class MainActivity extends Activity {
                 }
                 if (!TextUtils.isEmpty(data)) {
                     int index = data.indexOf("}");
-                    if (index >= 0) data = data.substring(0, index + 1);
+                    if (index >= 0) {
+                        data = data.substring(0, index + 1);
+                    }
                     if (index < data.length() - 1) {
                         mLastPartInfo = data.substring(index + 1);
                     }
@@ -1012,6 +996,13 @@ public class MainActivity extends Activity {
                 String message = dataModel.getShowMessage();
                 if (null != message && !message.isEmpty()) {
                     outPutMessage(message);
+                }
+
+                //lxx
+                if (dataModel != null) {
+                    Log.e("lxx", dataModel.toString());
+                } else {
+                    Log.e("lxx", "dataModel = null");
                 }
 
                 if (dataModel != null) {
@@ -1045,7 +1036,6 @@ public class MainActivity extends Activity {
                     mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                 }
 
-
                 if ("close".equals(dataModel.getWifi())) {
                     outPutMessage("Close Wifi");
                     mWifiManagerUtils.closeWifi();
@@ -1053,7 +1043,7 @@ public class MainActivity extends Activity {
 
                 if (GET.equals(dataModel.getOtg())) {
                     // otg
-                    USBDiskUtils usbDiskUtils = USBDiskUtils.getInstance(MainActivity.this);
+                    USBDiskUtils usbDiskUtils = new USBDiskUtils(MainActivity.this);
 //					dataModel.setOtg(USBDiskUtils.getInstance(MainActivity.this).getSDAllSize()
 //							+ "," + usbDiskUtils.getSDFreeSize());
                     usbDiskUtils.startTest();
@@ -1069,32 +1059,36 @@ public class MainActivity extends Activity {
                 if (GET.equals(dataModel.getAccelerometer()) || GET.equals(dataModel.getLight())
                         || GET.equals(dataModel.getProximity()) || GET.equals(dataModel.getMagnetometer())
                         || GET.equals(dataModel.getGyroscope())) {
-                    SensorManagerUtils sensorManagerUtils = SensorManagerUtils.getInstance(mainActivity);
-                    postDelayed(() -> {
-                        assert sensorManagerUtils != null;
-                        // 加速度传感器
-                        String accelerometer = sensorManagerUtils.getJSONObject()
-                                .optString(Sensor.TYPE_ACCELEROMETER + "", "error");
-                        dataModel.setAccelerometer(null != accelerometer ? accelerometer : "error");
-                        // 光感
-                        String light = sensorManagerUtils.getJSONObject()
-                                .optString(Sensor.TYPE_LIGHT + "", "error");
-                        dataModel.setLight(light);
-                        // 距离传感器
-                        String proximity = sensorManagerUtils.getJSONObject()
-                                .optString(Sensor.TYPE_PROXIMITY + "", "error");
-                        dataModel.setProximity(proximity);
-                        // 磁感应器
-                        String magnetometer = sensorManagerUtils.getJSONObject()
-                                .optString(Sensor.TYPE_MAGNETIC_FIELD + "", "error");
-                        dataModel.setMagnetometer(magnetometer);
-                        // 陀螺仪
-                        String gyroscope = sensorManagerUtils.getJSONObject()
-                                .optString(Sensor.TYPE_GYROSCOPE + "", "error");
-                        dataModel.setGyroscope(gyroscope);
+                    SensorManagerUtils sensorManagerUtils = new SensorManagerUtils(mainActivity);
+                    postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            assert sensorManagerUtils != null;
+                            // 加速度传感器
+                            String accelerometer = sensorManagerUtils.getJSONObject()
+                                    .optString(Sensor.TYPE_ACCELEROMETER + "", "error");
+                            dataModel.setAccelerometer(null != accelerometer ? accelerometer : "error");
+                            // 光感
+                            String light = sensorManagerUtils.getJSONObject()
+                                    .optString(Sensor.TYPE_LIGHT + "", "error");
+                            dataModel.setLight(light);
+                            // 距离传感器
+                            String proximity = sensorManagerUtils.getJSONObject()
+                                    .optString(Sensor.TYPE_PROXIMITY + "", "error");
+                            dataModel.setProximity(proximity);
+                            // 磁感应器
+                            String magnetometer = sensorManagerUtils.getJSONObject()
+                                    .optString(Sensor.TYPE_MAGNETIC_FIELD + "", "error");
+                            dataModel.setMagnetometer(magnetometer);
+                            // 陀螺仪
+                            String gyroscope = sensorManagerUtils.getJSONObject()
+                                    .optString(Sensor.TYPE_GYROSCOPE + "", "error");
+                            dataModel.setGyroscope(gyroscope);
 
-                        Log.d("dhm_sensor", gson.toJson(dataModel, DataModel.class));
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                            Log.d("dhm_sensor", gson.toJson(dataModel, DataModel.class));
+                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                            sensorManagerUtils.unregisterListeners();
+                        }
                     }, 1000);
                 }
 
@@ -1216,7 +1210,6 @@ public class MainActivity extends Activity {
 //                                closeCamera();
                                 closeAuxCameraBrightness();
                                 CameraTimer.cancel();
-
                             } else if (i >= 10) {
                                 dataModel.setAuxiliaryCamera("");
                                 mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
@@ -1255,13 +1248,13 @@ public class MainActivity extends Activity {
                                 String s = String.valueOf(GPSREES);
                                 dataModel.setGps(s);
                                 mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                                mGPSUtilss.remolistener();
+                                mGPSUtilss.removeListener();
                                 GPSTimer.cancel();
 //
                             } else if (i >= 20) {
                                 dataModel.setGps("error");
                                 mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                                mGPSUtilss.remolistener();
+                                mGPSUtilss.removeListener();
                                 GPSTimer.cancel();
 //
                             }
@@ -1275,10 +1268,8 @@ public class MainActivity extends Activity {
 
                 // 拨号
                 if (GET.equals(dataModel.getDial())) {
-
                     if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CALL_PHONE) !=
                             PackageManager.PERMISSION_GRANTED) {
-                        ;
                         Log.e("CHEN", "no permission");
                         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CALL_PHONE},
                                 REQUEST_CALL_PERMISSION);
@@ -1323,13 +1314,15 @@ public class MainActivity extends Activity {
                 if (GET.equals(dataModel.getRecord())) {
                     int time = dataModel.getTimeout() * 1000;
                     mRecordDataModel = dataModel;
-//                    headsetLoopbackUtils.start();
                     headsetLoopbackUtils.start();
-                    postDelayed(() -> {
-                        if (mRecordDataModel != null) {
-                            mRecordDataModel.setRecord(headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error");
-                            mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
-                            headsetLoopbackUtils.stop();
+                    postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mRecordDataModel != null) {
+                                mRecordDataModel.setRecord(headsetLoopbackUtils.mIsStartRecordSuccess ? "ok" : "error");
+                                mConnectManager.sendMessageToServer(gson.toJson(mRecordDataModel, DataModel.class));
+                                headsetLoopbackUtils.stop();
+                            }
                         }
                     }, time);
                 }
@@ -1396,15 +1389,13 @@ public class MainActivity extends Activity {
 //
                 }
 
-
                 // 屏幕
+                Log.e("lxx", " " + dataModel.getScreen() + "---" + dataModel.getScreenoperation());
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
                     mShowPictureFullDataModel = dataModel;
                     closedialog();//关闭二维码
-                    int resId = mainActivity.getResources()
-                            .getIdentifier(imageName, "drawable",
-                                    mainActivity.getPackageName());
+                    int resId = mainActivity.getResources().getIdentifier(imageName, "drawable", mainActivity.getPackageName());
 
                     if (resId > 0) {    //背景id
                         if (dataModel.getScreenoperation() == 0) {   //开
@@ -1418,7 +1409,6 @@ public class MainActivity extends Activity {
                         } else if (dataModel.getScreenoperation() == 1) {     //关掉
                             Activity topActivity = MyActivityManager.getInstance().getCurrentActivity();
                             if (topActivity instanceof ShowPictureFullActivity) {
-
                                 topActivity.finish();   //关掉
                             }
                             sendservermessage(true, mResult);
@@ -1533,6 +1523,7 @@ public class MainActivity extends Activity {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             new Handler().postDelayed(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         // 延迟5秒后自动挂断电话
@@ -1613,7 +1604,8 @@ public class MainActivity extends Activity {
                     checkGPS();
                 }
                 break;
-
+            default:
+                break;
         }
     }
 
@@ -1627,10 +1619,6 @@ public class MainActivity extends Activity {
 //
         }
     }
-
-
-    //获取辅摄像头进光量
-    //由于是调用读书郎本地的东西，下面报错不需要管
 
     public int getAuxCameraBrightness() {
         try {
@@ -1700,7 +1688,7 @@ public class MainActivity extends Activity {
     //返回切黑白屏的指令给服务器
     private void sendservermessage(boolean requestCode, int resultCode) {
 
-        if (requestCode == true) {
+        if (requestCode) {
             Log.v("hqb", "hqb__onActivityResult__mShowPictureFullDataModel = " + mShowPictureFullDataModel);
             if (mShowPictureFullDataModel != null) {
 

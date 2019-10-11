@@ -241,6 +241,7 @@ class Camera1 extends CameraViewImpl {
                         camera.cancelAutoFocus();
                         new Handler().postDelayed(new Runnable(){
 
+                            @Override
                             public void run() {
                                 takePictureInternal();
                                 //execute the task

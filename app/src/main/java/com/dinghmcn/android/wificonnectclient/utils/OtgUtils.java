@@ -29,7 +29,7 @@ public class OtgUtils {
     private String strFromFile = "";
     private File mfile = null;
     private int size;
-    public static OtgUtils instance;
+
     public OtgUtils(Context mContext) {
         this.mContext = mContext;
         hadOtg();
@@ -92,12 +92,6 @@ public class OtgUtils {
         return strFromFile;
     }
 
-    public static OtgUtils getInstance(Context mContext){
-        if (instance==null)
-            instance=new OtgUtils(mContext);
-        return instance;
-    }
-
     public void addFile() {
         try {
             mfile.createNewFile();
@@ -135,11 +129,8 @@ public class OtgUtils {
                 // line ++;
             }
             br.close();
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
+        } catch (IOException e) {
             e.printStackTrace();
-        } catch (IOException Ie) {
-            Ie.printStackTrace();
         }
         return str;
     }

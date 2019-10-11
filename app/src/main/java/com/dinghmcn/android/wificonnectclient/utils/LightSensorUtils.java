@@ -30,17 +30,12 @@ public class LightSensorUtils {
     private PowerManager powerManager;
     private long SensorchangeTimes = 0L;
     private float mValue;
-    private static LightSensorUtils instance;
+
     public LightSensorUtils(Context mContext) {
         this.mContext=mContext;
         getService();
     }
-    public static LightSensorUtils getInstance(@NonNull Context context) {
-        if (instance == null) {
-            instance = new LightSensorUtils(context);
-        }
-        return instance;
-    }
+
     private void getService() {
         mSensorManager = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
         mLightSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
@@ -70,10 +65,12 @@ public class LightSensorUtils {
     }
     private  SensorEventListener mLightSensorListener = new SensorEventListener(){
 
+        @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
         }
 
+        @Override
         public void onSensorChanged(SensorEvent event) {
 			/*int degree = 0;
 			try {

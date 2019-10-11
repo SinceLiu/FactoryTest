@@ -20,7 +20,6 @@ import static android.content.Context.VIBRATOR_SERVICE;
 public class VibratorUtils  {
     private android.os.Vibrator mVibrator;
     private Context mContext;
-    private static VibratorUtils instance;
     public VibratorUtils(Context mContext) {
         this.mContext = mContext;
         startVibrator();
@@ -36,11 +35,4 @@ public class VibratorUtils  {
             }
         },5000);
     }
-
-    public static VibratorUtils getInstance(Context mContext){
-        if (instance==null)
-            instance=new VibratorUtils(mContext);
-        return instance;
-    }
-
 }

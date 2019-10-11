@@ -29,26 +29,11 @@ public class BluetoothUtils {
     private BluetoothAdapter mBluetoothAdapter = null;
     private Set<BluetoothDevice> bluetoothDevices;
     private Set<String> bluetoothDeviceAddresses;
-    @SuppressLint("StaticFieldLeak")
-    private static BluetoothUtils instance = null;
 
-    private BluetoothUtils(Context mContext) {
+    public BluetoothUtils(Context mContext) {
         this.mContext = mContext;
         registerReceiver();
-    }
-
-    /**
-     * Gets instance.
-     *
-     * @param context the context
-     * @return the instance
-     */
-    public static BluetoothUtils getInstance(@NonNull Context context) {
-        if (instance == null) {
-            instance = new BluetoothUtils(context);
-        }
-
-        return instance;
+        bluetoothOpen();
     }
 
     // 监听蓝牙事件广播

@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
- /**
+/**
  * Created by chenzhi on 2017/12/13 0013.
  * <p>
  * 如果需要适配6.0以上系统请处理权限问题
@@ -38,8 +38,8 @@ public class GPSUtilss {
 
     private static Location mLocation = null;
 
-    private static Activity mContext;
-    private int mcount=0;
+    private Context mContext;
+    private int mcount = 0;
 
     public GPSUtilss(Activity context) {
         this.mContext = context;
@@ -58,13 +58,14 @@ public class GPSUtilss {
         String bestProvider = mLocationManager.getBestProvider(getCriteria(), true);
         // 获取位置信息
         // 如果不设置查询要求，getLastKnownLocation方法传人的参数为LocationManager.GPS_PROVIDER
-        if (bestProvider!=null){
-        Location location = mLocationManager.getLastKnownLocation(bestProvider);
+        if (bestProvider != null) {
+            Location location = mLocationManager.getLastKnownLocation(bestProvider);
 //        getLocationData(location);
-        mLocation = location;}
+            mLocation = location;
+        }
 
-            mLocationManager.addGpsStatusListener(listener);
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
+        mLocationManager.addGpsStatusListener(listener);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
 
         // 监听状态
 
@@ -101,9 +102,11 @@ public class GPSUtilss {
         criteria.setPowerRequirement(Criteria.POWER_LOW);
         return criteria;
     }
-    public void remolistener(){
-        if (listener!=null)
-        mLocationManager.removeGpsStatusListener(listener);
+
+    public void removeListener() {
+        if (listener != null) {
+            mLocationManager.removeGpsStatusListener(listener);
+        }
     }
 
 
@@ -118,8 +121,8 @@ public class GPSUtilss {
         return mLocation;
     }
 
-    public static String getLocalCity(){
-        if (mLocation==null){
+    public String getLocalCity() {
+        if (mLocation == null) {
             Log.e("GPSUtils", "getLocalCity: 获取城市信息为空");
             return "";
         }
@@ -132,8 +135,8 @@ public class GPSUtilss {
         return city;
     }
 
-    public static String getAddressStr(){
-        if (mLocation==null){
+    public String getAddressStr() {
+        if (mLocation == null) {
             Log.e("GPSUtils", "getAddressStr: 获取详细地址信息为空");
             return "";
         }
@@ -150,15 +153,17 @@ public class GPSUtilss {
     private static LocationListener locationListener = new LocationListener() {
 
         //位置信息变化时触发
+        @Override
         public void onLocationChanged(Location location) {
             mLocation = location;
-            Log.i(TAG, "时间：" + location.getTime());
-            Log.i(TAG, "经度：" + location.getLongitude());
-            Log.i(TAG, "纬度：" + location.getLatitude());
-            Log.i(TAG, "海拔：" + location.getAltitude());
+            Log.i(TAG, "时间：" + location.getTime()
+                    + "\n经度：" + location.getLongitude()
+                    + "\n纬度：" + location.getLatitude()
+                    + "\n海拔：" + location.getAltitude());
         }
 
         //GPS状态变化时触发
+        @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
             switch (status) {
                 // GPS状态为可见时
@@ -173,23 +178,27 @@ public class GPSUtilss {
                 case LocationProvider.TEMPORARILY_UNAVAILABLE:
                     Log.i(TAG, "当前GPS状态为暂停服务状态");
                     break;
+                default:
+                    break;
             }
         }
 
         //GPS开启时触发
+        @Override
         public void onProviderEnabled(String provider) {
             Location location = mLocationManager.getLastKnownLocation(provider);
             mLocation = location;
         }
 
         //GPS禁用时触发
+        @Override
         public void onProviderDisabled(String provider) {
             mLocation = null;
         }
     };
 
     // 获取地址信息
-    private static List<Address> getAddress(Location location) {
+    private List<Address> getAddress(Location location) {
         List<Address> result = null;
         try {
             if (location != null) {
@@ -206,6 +215,7 @@ public class GPSUtilss {
 
     // 状态监听
     GpsStatus.Listener listener = new GpsStatus.Listener() {
+        @Override
         public void onGpsStatusChanged(int event) {
             switch (event) {
                 // 第一次定位
@@ -228,9 +238,8 @@ public class GPSUtilss {
                         count++;
                     }
                     System.out.println("搜索到：" + count + "颗卫星");
-                    if (count>0)
-                    {
-                     mcount=count;
+                    if (count > 0) {
+                        mcount = count;
 //                        Toast.makeText(mContext,"搜索到：" + count + "颗卫星",Toast.LENGTH_SHORT).show();
                     }
                     break;
@@ -242,10 +251,13 @@ public class GPSUtilss {
                 case GpsStatus.GPS_EVENT_STOPPED:
                     Log.i(TAG, "定位结束");
                     break;
+                default:
+                    break;
             }
         }
     };
-    public int getcount(){
-        return  mcount;
-     }
+
+    public int getcount() {
+        return mcount;
+    }
 }
