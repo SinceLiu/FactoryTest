@@ -33,7 +33,6 @@ import top.zibin.luban.OnRenameListener;
  *
  * @author dinghmcn
  * @date 2018 /4/20 10:47
- * @deprecated 拍照效率好
  */
 public class CameraActivity extends AppCompatActivity implements
         ActivityCompat.OnRequestPermissionsResultCallback {
@@ -243,7 +242,6 @@ public class CameraActivity extends AppCompatActivity implements
             Luban.with(this)
                     .load(originalFile)
                     .ignoreBy(100)
-
                     .setTargetDir(getExternalCacheDir().getAbsolutePath())
                     .setRenameListener(new OnRenameListener() {
                         @Override
