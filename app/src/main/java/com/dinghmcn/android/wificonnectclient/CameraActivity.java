@@ -282,7 +282,6 @@ public class CameraActivity extends AppCompatActivity implements
 
         } catch (IOException e) {
             Log.e("CHEN", "Cannot write to " + originalFile, e);
-            Log.e("CHEN", "hqb__CameraActivityfinish__createFile__failed");
             setResult(RESULT_CANCELED);
             finish();
         }

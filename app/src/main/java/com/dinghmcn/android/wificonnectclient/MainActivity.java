@@ -298,6 +298,8 @@ public class MainActivity extends Activity {
             //         "\"PWD\":\""+(TextUtils.isEmpty(originalPassword)?"readboy@fqc1":originalPassword)+ "\",\"Station\":1}");
 
             //lxx
+//            prepareConnectServer("{\"IP\":" + "192.168.99.107" + ",\"Port\":12345,\"SSID\":\""
+//                    + "readboy-24.198-2.4G" + "\"," + "\"PWD\":\"" + "1234567890" + "\",\"Station\":1}");
             prepareConnectServer("{\"IP\":" + "192.168.0.110" + ",\"Port\":12345,\"SSID\":\""
                     + "SoftReadboy2" + "\"," + "\"PWD\":\"" + "kfbrjb2@readboy.com" + "\",\"Station\":1}");
 
@@ -332,7 +334,6 @@ public class MainActivity extends Activity {
         if (getScreenMode() == 1) {
             BrightnessTools.stopAutoBrightness(MainActivity.this);
         }
-        Log.e("CHEN", "getScreenBrightness:" + getScreenBrightness());
         if (getScreenBrightness() <= 100) {
             saveScreenBrightness(142);
             setScreenBrightness(142);
@@ -341,8 +342,6 @@ public class MainActivity extends Activity {
             saveScreenBrightness(142);
             setScreenBrightness(142);
         }
-        Log.e("CHEN", "ScreenBrightness:" + getScreenBrightness());
-
     }
 
     /**
@@ -642,22 +641,14 @@ public class MainActivity extends Activity {
      */
     @Override
     public boolean dispatchTouchEvent(@NonNull MotionEvent ev) {
-        int index = ev.getActionIndex();
-        Log.d(TAG, "onTouchEvent");
-        int count = ev.getPointerCount();
-        int actionMasked = ev.getActionMasked();
         int actionIndex = ev.getActionIndex();
         int pointerCount = ev.getPointerCount();
-        Log.d(TAG, "onTouchEventnum" + count);
         if (isCatchTouch) {
             if (mTouchJsonArray == null) {
                 mTouchJsonArray = new JSONArray();
             }
-
-            Log.w(TAG, "dispatchTouchEvent: " + ev.getAction());
             switch (ev.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    Log.d(TAG, "down");
                     mTouchJsonObject = new JSONObject();
                     mTouchMoveJsonObject = new JSONArray();
                     mTouchMoveJsonObject2 = new JSONArray();
@@ -669,10 +660,8 @@ public class MainActivity extends Activity {
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    Log.d(TAG, "move");
                     Log.d(TAG, "手指数：" + ev.getPointerCount());
                     for (int i = 0; i < pointerCount; i++) {
-                        Log.d("CHEN", "pointerIndex=" + i + ",pointerId=" + ev.getPointerId(i));
                         Log.d("CHEN", "第" + (i + 1) + "个手指的X坐标=" + ev.getX(i) + ",Y坐标=" + ev.getY(i));
                         if (i == 1) {
                             if (mTouchMoveJsonObject2 != null) {
@@ -689,7 +678,6 @@ public class MainActivity extends Activity {
 //                    }
 //                    if(ev.getPointerCount()==1) {
                     if (mTouchMoveJsonObject != null) {
-                        Log.d(TAG, "move3");
                         //打印手指的滑动坐标
                         mTouchMoveJsonObject.put("(" + ev.getRawX() + "," + ev.getRawY() + ")");
                     }
@@ -697,7 +685,6 @@ public class MainActivity extends Activity {
 
                     break;
                 case MotionEvent.ACTION_UP:
-                    Log.d(TAG, "up");
                     try {
                         //打印最后一个手指抬起的坐标
                         assert mTouchJsonObject != null;
@@ -715,7 +702,6 @@ public class MainActivity extends Activity {
                     break;
                 case MotionEvent.ACTION_POINTER_DOWN:
 //                    mPoint2Down = true;
-                    Log.d(TAG, "move2");
                     Log.d("CHEN", "第" + (actionIndex + 1) + "个手指按下");
                     try {
                         if (mTouchJsonObject != null) {
@@ -727,7 +713,6 @@ public class MainActivity extends Activity {
                     break;
 
                 case MotionEvent.ACTION_POINTER_UP:
-                    Log.d(TAG, "move2");
                     Log.d("CHEN", "第" + (actionIndex + 1) + "个手指抬起");
 //                    if (mPoint2Down && mTouchRepeat < 10) {
                     //do something here
@@ -781,7 +766,6 @@ public class MainActivity extends Activity {
                 mConnectManager = ConnectManagerUtils.newInstance(mMainHandler, inetSocketAddress);
 //                assert mConnectManager != null;
 //                assert mWifiManagerUtils != null;
-                Log.e("CHEN", "Main:ssid:" + wifiSsid);
 
 //                if (WifiManagerUtils.getInstance(this).isWifiConnected(wifiSsid)) {
 //                    //不用在连接了
@@ -985,10 +969,8 @@ public class MainActivity extends Activity {
                     return;
                 }
 //                dataModel = gson.fromJson((String) msg.obj, DataModel.class);
-
                 // 关机
                 if (GET.equals(dataModel.getShutdown())) {
-
                     shutdownSystem();
                 }
 
@@ -1221,7 +1203,6 @@ public class MainActivity extends Activity {
                         }
                     };
                     CameraTimer.schedule(cameraTask, 0, 500);
-
 //                    closeCamera();
                 }
 
@@ -1267,18 +1248,42 @@ public class MainActivity extends Activity {
                 }
 
                 // 拨号
-                if (GET.equals(dataModel.getDial())) {
+                if ("1".equals(dataModel.getDial())) {
                     if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CALL_PHONE) !=
                             PackageManager.PERMISSION_GRANTED) {
-                        Log.e("CHEN", "no permission");
                         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CALL_PHONE},
                                 REQUEST_CALL_PERMISSION);
                     } else {
-                        Log.e("CHEN", "has permission");
                         callPhone();
                     }
+                }
 
-//
+                // 挂断
+                if ("-1".equals(dataModel.getDial())) {
+                    try {
+                        TelephonyManager telMag = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        Class<TelephonyManager> c = TelephonyManager.class;
+                        // 再去反射TelephonyManager里面的私有方法 getITelephony 得到 ITelephony对象
+                        Method mthEndCall = c.getDeclaredMethod("getITelephony", (Class[]) null);
+                        //允许访问私有方法
+                        mthEndCall.setAccessible(true);
+                        final Object obj = mthEndCall.invoke(telMag, (Object[]) null);
+                        // 再通过ITelephony对象去反射里面的endCall方法，挂断电话
+                        Method mt = obj.getClass().getMethod("endCall");
+                        //允许访问私有方法
+                        mt.setAccessible(true);
+                        boolean isEndCall = (boolean) mt.invoke(obj);
+                        if (isEndCall) {
+                            dataModel.setDial("ok");
+                        } else {
+                            dataModel.setDial("error");
+                        }
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    } catch (Exception e) {
+                        dataModel.setDial("error");
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                        e.printStackTrace();
+                    }
                 }
 
                 // wifi
@@ -1390,7 +1395,6 @@ public class MainActivity extends Activity {
                 }
 
                 // 屏幕
-                Log.e("lxx", " " + dataModel.getScreen() + "---" + dataModel.getScreenoperation());
                 if (dataModel.getScreen() != null) {
                     String imageName = dataModel.getScreen();
                     mShowPictureFullDataModel = dataModel;
@@ -1522,36 +1526,6 @@ public class MainActivity extends Activity {
             Intent intent = new Intent("android.intent.action.CALL_PRIVILEGED", Uri.parse("tel:" + 112));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // 延迟5秒后自动挂断电话
-                        // 首先拿到TelephonyManager
-                        TelephonyManager telMag = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                        Class<TelephonyManager> c = TelephonyManager.class;
-
-                        // 再去反射TelephonyManager里面的私有方法 getITelephony 得到 ITelephony对象
-                        Method mthEndCall = c.getDeclaredMethod("getITelephony", (Class[]) null);
-                        //允许访问私有方法
-                        mthEndCall.setAccessible(true);
-                        final Object obj = mthEndCall.invoke(telMag, (Object[]) null);
-
-                        // 再通过ITelephony对象去反射里面的endCall方法，挂断电话
-                        Method mt = obj.getClass().getMethod("endCall");
-                        //允许访问私有方法
-                        mt.setAccessible(true);
-                        mt.invoke(obj);
-//                        Toast.makeText(MainActivity.this, "挂断电话！", Toast.LENGTH_SHORT).show();
-                        dataModel.setDial("ok");
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                    } catch (Exception e) {
-                        dataModel.setDial("error");
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                        e.printStackTrace();
-                    }
-                }
-            }, 8 * 1000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1587,19 +1561,15 @@ public class MainActivity extends Activity {
         switch (requestCode) {
             case REQUEST_CALL_PERMISSION: //拨打电话
                 if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
-                    Log.e("CHEN1", "no permission");
                     Toast.makeText(this, "请允许拨号权限后再试", Toast.LENGTH_SHORT).show();
                 } else {//成功
-                    Log.e("CHEN1", "has permission");
 //                    callPhone();
                 }
                 break;
             case REQUEST_ACCESS_FINE_LOCATION: //GPS
                 if (grantResults.length <= 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {//失败
-                    Log.e("CHEN1", "no permission");
                     Toast.makeText(this, "请允许GPS权限后再试", Toast.LENGTH_SHORT).show();
                 } else {//成功
-                    Log.e("CHEN1", "has permission");
 //                    callPhone();
                     checkGPS();
                 }
@@ -1626,7 +1596,6 @@ public class MainActivity extends Activity {
             Class rbciManager = manager.getClass();
             Method getAuxCameraBrightness = rbciManager.getMethod("GetAuxCameraBrightness");
             getAuxCameraBrightness.setAccessible(true);
-            Log.e("CHEN", "打印辅摄像头进光量" + getAuxCameraBrightness.invoke(manager, null));
             return (int) getAuxCameraBrightness.invoke(manager, null);
         } catch (Exception e) {
             e.printStackTrace();

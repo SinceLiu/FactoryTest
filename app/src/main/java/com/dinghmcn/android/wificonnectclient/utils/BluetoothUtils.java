@@ -48,14 +48,12 @@ public class BluetoothUtils {
         // 发现蓝牙设备
         intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
         mContext.registerReceiver(blueToothReceiver, intentFilter);
-        Log.e("CHEN", "startBlueToothLinster: " );
     }
 
     private BroadcastReceiver blueToothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            Log.e("CHEN", "onReceiveBlueTooth: "+action );
             assert action != null;
             switch (action) {
                 case BluetoothAdapter.ACTION_STATE_CHANGED:
@@ -73,7 +71,6 @@ public class BluetoothUtils {
                     break;
 
                 case BluetoothAdapter.ACTION_DISCOVERY_STARTED:
-                    Log.e("czl", "ACTION_DISCOVERY_STARTED 6" + bluetoothDevices);
                     break;
 
                 case BluetoothDevice.ACTION_FOUND:
@@ -81,16 +78,13 @@ public class BluetoothUtils {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     // 保存发现的蓝牙设备，并根据MAC地址设备防止重复加入
                     if (!bluetoothDeviceAddresses.contains(device.getAddress())) {
-                        Log.d(TAG, device.getName() + "---" + device.getAddress());
                         bluetoothDeviceAddresses.add(device.getAddress());
                         bluetoothDevices.add(device);
-                        Log.e("czl", "ACTION_FOUND 6" + bluetoothDevices);
                     }
                     EventBus.getDefault().post(1011);
                     break;
 
                 case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-                    Log.e("czl", "ACTION_DISCOVERY_FINISHED 6");
                     EventBus.getDefault().post(1011);
                     break;
 
@@ -169,7 +163,6 @@ public class BluetoothUtils {
         }
         if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
             mBluetoothAdapter.disable();
-            Log.e("czl", "关闭蓝牙");
         }
     }
 
