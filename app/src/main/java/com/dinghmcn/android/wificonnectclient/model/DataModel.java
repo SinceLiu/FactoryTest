@@ -58,7 +58,7 @@ public class DataModel {
     /**
      * 标志位
      */
-    private String flag;
+    private String  flag;
     /**
      * 光线传感器
      */

@@ -14,6 +14,8 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.net.Uri;
+import android.os.AsyncResult;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -24,6 +26,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -41,6 +44,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.internal.telephony.ITelephony;
 import com.dinghmcn.android.wificonnectclient.model.DataModel;
 import com.dinghmcn.android.wificonnectclient.scanCode.WifiUtils;
 import com.dinghmcn.android.wificonnectclient.utils.BatteryChargeUtils;
@@ -74,6 +78,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -218,6 +223,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyRunnable.Instance = this;
+        getFlagC20();
         EventBus.getDefault().register(this);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -298,10 +304,10 @@ public class MainActivity extends Activity {
             //         "\"PWD\":\""+(TextUtils.isEmpty(originalPassword)?"readboy@fqc1":originalPassword)+ "\",\"Station\":1}");
 
             //lxx
-//            prepareConnectServer("{\"IP\":" + "192.168.99.107" + ",\"Port\":12345,\"SSID\":\""
-//                    + "readboy-24.198-2.4G" + "\"," + "\"PWD\":\"" + "1234567890" + "\",\"Station\":1}");
-            prepareConnectServer("{\"IP\":" + "192.168.0.110" + ",\"Port\":12345,\"SSID\":\""
-                    + "SoftReadboy2" + "\"," + "\"PWD\":\"" + "kfbrjb2@readboy.com" + "\",\"Station\":1}");
+            prepareConnectServer("{\"IP\":" + "192.168.99.113" + ",\"Port\":12345,\"SSID\":\""
+                    + "readboy-24.198-2.4G" + "\"," + "\"PWD\":\"" + "1234567890" + "\",\"Station\":1}");
+//            prepareConnectServer("{\"IP\":" + "192.168.0.110" + ",\"Port\":12345,\"SSID\":\""
+//                    + "SoftReadboy2" + "\"," + "\"PWD\":\"" + "kfbrjb2@readboy.com" + "\",\"Station\":1}");
 
         } else {
             prepareConnectServer("{\"IP\":" + ip + ",\"Port\":12345,\"SSID\":\"tianxi\"" +
@@ -1161,9 +1167,7 @@ public class MainActivity extends Activity {
 //                            }
 //
 //                   }, 1000);*/
-
                 }
-
 
                 // 振动
                 if (GET.equals(dataModel.getVibrator())) {
@@ -1244,7 +1248,6 @@ public class MainActivity extends Activity {
                     };
                     GPSTimer.schedule(gpsTask, 0, 500);
 //                            },2000);
-
                 }
 
                 // 拨号
@@ -1260,29 +1263,50 @@ public class MainActivity extends Activity {
 
                 // 挂断
                 if ("-1".equals(dataModel.getDial())) {
-                    try {
-                        TelephonyManager telMag = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                        Class<TelephonyManager> c = TelephonyManager.class;
-                        // 再去反射TelephonyManager里面的私有方法 getITelephony 得到 ITelephony对象
-                        Method mthEndCall = c.getDeclaredMethod("getITelephony", (Class[]) null);
-                        //允许访问私有方法
-                        mthEndCall.setAccessible(true);
-                        final Object obj = mthEndCall.invoke(telMag, (Object[]) null);
-                        // 再通过ITelephony对象去反射里面的endCall方法，挂断电话
-                        Method mt = obj.getClass().getMethod("endCall");
-                        //允许访问私有方法
-                        mt.setAccessible(true);
-                        boolean isEndCall = (boolean) mt.invoke(obj);
-                        if (isEndCall) {
-                            dataModel.setDial("ok");
-                        } else {
-                            dataModel.setDial("error");
-                        }
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
-                    } catch (Exception e) {
+                    if (endCall()) {
+                        dataModel.setDial("ok");
+                    } else {
                         dataModel.setDial("error");
-                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                    }
+                    mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                }
+
+                //校准、综测、耦合
+                if (GET.equals(dataModel.getFlag())) {
+                    TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                    try {
+                        Class manager = telephonyManager.getClass();
+                        Method getDeviceCalibrationFlag = manager.getMethod("getDeviceCalibrationFlag", null);
+                        getDeviceCalibrationFlag.setAccessible(true);
+                        String flag = (String) getDeviceCalibrationFlag.invoke(telephonyManager, null);
+                        String flag1 = flag.substring(0, 1);
+                        boolean mFlag1 = flag1.equalsIgnoreCase("P");
+                        String flag2 = flag.substring(1, 2);
+                        boolean mFlag2 = flag2.equalsIgnoreCase("P");
+                        String flag3 = flag.substring(2, 3);
+                        boolean mFlag3 = flag3.equalsIgnoreCase("P");
+                        if (mFlag1 && mFlag2 && mFlag3) {
+                            dataModel.setFlag("ok");
+                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                        } else {
+                            String result = "";
+                            if (!mFlag1) {
+                                result = result + "校准 ";
+                            }
+                            if (!mFlag2) {
+                                result = result + "综测 ";
+                            }
+                            if (!mFlag3) {
+                                result = result + "耦合 ";
+                            }
+                            Log.e(TAG, result + "fail");
+                            Toast.makeText(MainActivity.this, result + "fail", Toast.LENGTH_SHORT).show();
+                            mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
+                        }
+                    } catch (Exception e) {
                         e.printStackTrace();
+                        dataModel.setFlag("error");
+                        mConnectManager.sendMessageToServer(gson.toJson(dataModel, DataModel.class));
                     }
                 }
 
@@ -1521,11 +1545,55 @@ public class MainActivity extends Activity {
 
     //
     private void callPhone() {
-
         try {
             Intent intent = new Intent("android.intent.action.CALL_PRIVILEGED", Uri.parse("tel:" + 112));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean endCall() {
+        boolean isEndCall = false;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                TelecomManager telecom = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
+                isEndCall = telecom.endCall();
+            } else {
+                TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                Class c = Class.forName(telephony.getClass().getName());
+                Method m = c.getDeclaredMethod("getITelephony");
+                m.setAccessible(true);
+                com.android.internal.telephony.ITelephony telephonyService = (ITelephony) m.invoke(telephony);
+                isEndCall = telephonyService.endCall();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return isEndCall;
+    }
+
+    private static final int NV_FACTORY_DATA_1_I = 2497;
+    private static final int NV_FACTORY_DATA_3_I = 2499;
+
+    //C20校准、综测、耦合标志位
+    //需要com.qualcomm.permission.USE_QCRIL_MSG_TUNNEL
+    private void getFlagC20() {
+        byte[] result = null;
+        try {
+            Class mQcRilHookClass = Class.forName("com.qualcomm.qcrilhook.QcRilHook");
+            Constructor constructor = mQcRilHookClass.getConstructor(Context.class);
+            Object object = constructor.newInstance(MainActivity.this);
+            Method sendQcRilHookMsg = mQcRilHookClass.getMethod("sendQcRilHookMsg", int.class, int.class);
+            sendQcRilHookMsg.setAccessible(true);
+            AsyncResult asyncResult = (AsyncResult) sendQcRilHookMsg.invoke(object, NV_FACTORY_DATA_1_I, NV_FACTORY_DATA_3_I);
+            if (asyncResult.exception != null) {
+                Log.e("lxx", "exception : " + asyncResult.exception.toString());
+            } else {
+                result = (byte[]) asyncResult.result;
+                Log.e("lxx", "result =" + result[0] + "--" + result[1] + " --" + result[2]);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
